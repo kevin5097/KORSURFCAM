@@ -3,86 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌊 해변 CCTV 모음</title>
+<title>🌊 해변 CCTV 힙 모음</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 body {
-    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
-    background: #f0f4f8;
     margin: 0;
     padding: 0;
+    font-family: 'Roboto Mono', monospace;
+    background: linear-gradient(120deg, #1e3c72, #2a5298);
+    color: #fff;
 }
 header {
-    background: #0077b6;
-    color: #fff;
     text-align: center;
-    padding: 1.2rem;
-    font-size: 1.7rem;
-    font-weight: 600;
+    padding: 2rem 1rem;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    background: rgba(0,0,0,0.4);
+    text-shadow: 1px 1px 3px #000;
 }
 main {
-    max-width: 900px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    max-width: 1100px;
     margin: 2rem auto;
     padding: 0 1rem;
 }
-.beach {
-    background: #fff;
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-.beach h2 {
-    color: #0077b6;
-    margin-top: 0;
-}
-.beach button {
-    display: inline-block;
-    margin-top: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: #e2e8f0;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
+.beach-card {
+    background: linear-gradient(135deg, #ff758c, #ff7eb3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    transition: transform 0.3s, box-shadow 0.3s;
     cursor: pointer;
+    text-align: center;
+}
+.beach-card:hover {
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.4);
+}
+.beach-card h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.3rem;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+}
+.beach-card button {
+    background: rgba(255,255,255,0.85);
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 8px;
+    color: #333;
     transition: background 0.2s;
 }
-.beach button:hover {
-    background: #cbd5e1;
+.beach-card button:hover {
+    background: #fff;
+}
+@media(max-width: 500px) {
+    header { font-size: 1.5rem; padding: 1.5rem 1rem; }
+    .beach-card h2 { font-size: 1.1rem; }
 }
 </style>
 </head>
 <body>
-<header>🌊 해변 CCTV 모음</header>
+<header>🌊 힙한 해변 CCTV 모음</header>
 <main>
+  <div class="beach-card">
+    <h2>부산 송정해변</h2>
+    <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/songjeong','_blank')">
+      🔗 원본 보기
+    </button>
+  </div>
 
-<div class="beach">
-  <h2>부산 송정해변</h2>
-  <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/songjeong','_blank')">
-    🔗 원본 보기
-  </button>
-</div>
+  <div class="beach-card">
+    <h2>부산 다대포해변</h2>
+    <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/dadaepo','_blank')">
+      🔗 원본 보기
+    </button>
+  </div>
 
-<div class="beach">
-  <h2>부산 다대포해변</h2>
-  <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/dadaepo','_blank')">
-    🔗 원본 보기
-  </button>
-</div>
+  <div class="beach-card">
+    <h2>강원 양양해변</h2>
+    <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/yangyang','_blank')">
+      🔗 원본 보기
+    </button>
+  </div>
 
-<div class="beach">
-  <h2>강원 양양해변</h2>
-  <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/yangyang','_blank')">
-    🔗 원본 보기
-  </button>
-</div>
-
-<div class="beach">
-  <h2>강원 속초해변</h2>
-  <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/sokcho','_blank')">
-    🔗 원본 보기
-  </button>
-</div>
-
+  <div class="beach-card">
+    <h2>강원 속초해변</h2>
+    <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/sokcho','_blank')">
+      🔗 원본 보기
+    </button>
+  </div>
 </main>
 </body>
 </html>
