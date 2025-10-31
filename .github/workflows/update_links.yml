@@ -1,0 +1,33 @@
+name: Update Beach Links
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 매일 자정 실행
+  workflow_dispatch:     # 수동 실행 가능
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run script
+        run: python update_beach_links.py
+
+      - name: Commit and push
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add beaches.json
+          git commit -m "Update beach links [auto]" || echo "No changes to commit"
+          git push
