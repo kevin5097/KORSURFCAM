@@ -26,8 +26,8 @@ jobs:
 
       - name: Commit and push
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add beaches.json
-          git commit -m "Update beach links [auto]" || echo "No changes to commit"
-          git push
+    git config --global user.name "github-actions"
+    git config --global user.email "actions@github.com"
+    git add beaches.json
+    git diff --cached --quiet || git commit -m "Update beach links [auto]"
+    git push
