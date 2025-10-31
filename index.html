@@ -1,34 +1,96 @@
-import requests
-import json
-from datetime import datetime
-
-# 해변 정보
-beaches = [
-    {
-        "name": "부산 송정해변",
-        "url": "https://www.cctv-world.kr/cctv/beach2/songjeong"
-    }
-]
-
-updated_beaches = []
-
-for b in beaches:
-    try:
-        r = requests.get(b["url"], timeout=5)
-        if r.status_code == 200:
-            updated_beaches.append(b)
-        else:
-            print(f"[오류] {b['name']} 링크 상태: {r.status_code}")
-    except Exception as e:
-        print(f"[오류] {b['name']} 연결 실패: {e}")
-
-# JSON 파일로 저장
-output = {
-    "last_updated": str(datetime.now()),
-    "beaches": updated_beaches
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 실시간 해변 CCTV</title>
+<style>
+body {
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+    background: #f8fafc;
+    margin: 0;
+    padding: 0;
 }
+header {
+    background: #0077b6;
+    color: #fff;
+    text-align: center;
+    padding: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+main {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+.beach {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.beach h2 {
+    color: #0077b6;
+    margin-top: 0;
+}
+.beach a {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: #e2e8f0;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #222;
+    font-size: 0.95rem;
+}
+.beach a:hover {
+    background: #cbd5e1;
+}
+</style>
+</head>
+<body>
+<header>🌊 실시간 해변 CCTV</header>
+<main id="beachContainer">
+    <p>🔄 링크 로딩 중...</p>
+</main>
 
-with open("beaches.json", "w", encoding="utf-8") as f:
-    json.dump(output, f, ensure_ascii=False, indent=2)
+<script>
+// JSON 불러와서 페이지에 표시
+fetch('beaches.json')
+  .then(res => res.json())
+  .then(data => {
+    const container = document.querySelector('#beachContainer');
+    container.innerHTML = ''; // 초기 메시지 제거
 
-print("✅ beaches.json 업데이트 완료")
+    if(data.beaches.length === 0){
+        container.innerHTML = "<p>⚠️ 유효한 링크가 없습니다.</p>";
+        return;
+    }
+
+    data.beaches.forEach(b => {
+        const div = document.createElement('div');
+        div.className = 'beach';
+        div.innerHTML = `
+            <h2>${b.name}</h2>
+            <a href="${b.url}" target="_blank">🔗 원본 보기</a>
+        `;
+        container.appendChild(div);
+    });
+
+    // 마지막 업데이트 시간 표시
+    const footer = document.createElement('p');
+    footer.style.textAlign = 'center';
+    footer.style.fontSize = '0.8rem';
+    footer.style.color = '#555';
+    footer.textContent = `마지막 업데이트: ${data.last_updated}`;
+    container.appendChild(footer);
+  })
+  .catch(err => {
+    document.querySelector('#beachContainer').innerHTML = "<p>⚠️ 데이터 로드 실패</p>";
+    console.error(err);
+  });
+</script>
+</body>
+</html>
