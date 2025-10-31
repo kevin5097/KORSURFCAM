@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>한국 해변 실시간 CCTV 모음 🌊</title>
+  <style>
+    :root {
+      --primary: #0077b6;
+      --bg: #f8fafc;
+      --text: #222;
+      --card-bg: #ffffff;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1.2rem;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .beach-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px var(--shadow);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .beach-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .beach-info {
+      padding: 1rem 1.2rem;
+    }
+
+    .beach-info h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--primary);
+    }
+
+    .beach-info a {
+      display: inline-block;
+      margin-top: 0.5rem;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.9rem;
+      background: #e2e8f0;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+
+    .beach-info a:hover {
+      background: #cbd5e1;
+    }
+
+    iframe {
+      width: 100%;
+      height: 220px;
+      border: none;
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        font-size: 1.2rem;
+        padding: 1rem;
+      }
+      iframe {
+        height: 200px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .beach-info h2 {
+        font-size: 1rem;
+      }
+      iframe {
+        height: 180px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>🌊 한국 해변 실시간 CCTV 모음</header>
+
+  <main>
+    <!-- 중문해수욕장 -->
+    <div class="beach-card">
+      <iframe src="https://cctv-world.kr/embed/beach2/jungmun" allowfullscreen></iframe>
+      <div class="beach-info">
+        <h2>제주 중문해수욕장</h2>
+        <a href="https://cctv-world.kr/cctv/beach2/jungmun" target="_blank">🔗 원본 보기</a>
+      </div>
+    </div>
+
+    <!-- 송정해변 -->
+    <div class="beach-card">
+      <iframe src="https://cctv-world.kr/embed/beach1/songjeong" allowfullscreen></iframe>
+      <div class="beach-info">
+        <h2>부산 송정해변</h2>
+        <a href="https://cctv-world.kr/cctv/beach1/songjeong" target="_blank">🔗 원본 보기</a>
+      </div>
+    </div>
+
+    <!-- 양양 죽도해변 -->
+    <div class="beach-card">
+      <iframe src="https://wsbfarm.com/wavecam/embed/jukdo" allowfullscreen></iframe>
+      <div class="beach-info">
+        <h2>양양 죽도해변</h2>
+        <a href="https://www.wsbfarm.com/wavecam/WaveCamDetail/7" target="_blank">🔗 원본 보기</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
