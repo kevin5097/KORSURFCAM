@@ -2,7 +2,7 @@ import requests
 import json
 from datetime import datetime
 
-# 해변 정보
+# 체크할 해변 리스트
 beaches = [
     {
         "name": "부산 송정해변",
@@ -22,7 +22,7 @@ for b in beaches:
     except Exception as e:
         print(f"[오류] {b['name']} 연결 실패: {e}")
 
-# JSON 파일로 저장
+# JSON 생성
 output = {
     "last_updated": str(datetime.now()),
     "beaches": updated_beaches
