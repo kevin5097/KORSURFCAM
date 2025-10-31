@@ -57,12 +57,12 @@ main {
 </main>
 
 <script>
-// JSON 불러와서 페이지에 표시
+// JSON 불러와서 페이지 표시
 fetch('beaches.json')
   .then(res => res.json())
   .then(data => {
     const container = document.querySelector('#beachContainer');
-    container.innerHTML = ''; // 초기 메시지 제거
+    container.innerHTML = '';
 
     if(data.beaches.length === 0){
         container.innerHTML = "<p>⚠️ 유효한 링크가 없습니다.</p>";
@@ -79,7 +79,6 @@ fetch('beaches.json')
         container.appendChild(div);
     });
 
-    // 마지막 업데이트 시간 표시
     const footer = document.createElement('p');
     footer.style.textAlign = 'center';
     footer.style.fontSize = '0.8rem';
