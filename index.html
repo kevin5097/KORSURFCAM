@@ -1,99 +1,870 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌊 해변 CCTV 모음</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#04141d">
+<title>파도 읽기 — 국내 해변 서핑 예보</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', sans-serif;
-    background-color: #f5f6fa;
-    color: #333;
+:root{
+  --deep:#04141d; --hull:#0a2333; --panel:#0d2a3b;
+  --grid:#17435c; --line:#1e5573;
+  --ink:#e4f1f6; --ink-dim:#7fa0b3;
+  --swell:#3fc9dc; --dawn:#f0b23f; --warn:#e0705f;
+  --r:12px; --tap:46px;
 }
-header {
-    text-align: center;
-    padding: 2rem 1rem;
-    font-size: 2rem;
-    font-weight: 600;
-    color: #2f3640;
-}
-main {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    max-width: 1000px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-}
-.beach-card {
-    background-color: #fff;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    transition: transform 0.2s, box-shadow 0.2s;
-    text-align: center;
-}
-.beach-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-}
-.beach-card h2 {
-    margin: 0 0 1rem 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #2f3640;
-}
-.beach-card button {
-    background-color: #0984e3;
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1rem;
-    font-size: 0.95rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.beach-card button:hover {
-    background-color: #74b9ff;
-}
-@media(max-width: 500px) {
-    header { font-size: 1.5rem; padding: 1.5rem 1rem; }
-    .beach-card h2 { font-size: 1.1rem; }
-}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--deep);color:var(--ink);
+  font-family:'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  font-size:15px;line-height:1.6;font-variant-numeric:tabular-nums;min-height:100vh;
+  padding-bottom:env(safe-area-inset-bottom)}
+.wrap{max-width:760px;margin:0 auto;padding:16px 14px 48px}
+@media(min-width:761px){.wrap{max-width:1100px}}
+
+header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:21px;font-weight:700;letter-spacing:-.02em}
+header p{color:var(--ink-dim);font-size:12.5px}
+
+/* ---------- 선택 흐름 ---------- */
+.picker{background:var(--hull);border:1px solid var(--grid);border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+.crumbs{display:flex;align-items:center;gap:6px;padding:11px 14px;border-bottom:1px solid var(--grid);
+  font-size:13px;color:var(--ink-dim);flex-wrap:wrap}
+.crumbs b{color:var(--ink);font-weight:600}
+.crumbs .sep{opacity:.5}
+.crumbs button{background:none;border:0;color:var(--swell);font:inherit;font-size:13px;cursor:pointer;padding:2px 0}
+.step{padding:12px 14px}
+.step h2{font-size:12px;color:var(--ink-dim);font-weight:600;margin-bottom:10px}
+.grid{display:grid;gap:8px}
+.grid.coast{grid-template-columns:repeat(4,1fr)}
+.grid.region{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
+.grid.spot{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
+.grid button{min-height:var(--tap);background:var(--panel);border:1px solid var(--grid);color:var(--ink);
+  border-radius:10px;padding:10px 8px;font:inherit;font-size:14.5px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.25}
+.grid button small{color:var(--ink-dim);font-size:11px}
+.grid button:hover{border-color:var(--line)}
+.grid button[aria-pressed="true"]{background:var(--swell);border-color:var(--swell);color:#04141d;font-weight:700}
+.grid button[aria-pressed="true"] small{color:#04384a}
+
+/* ---------- 미니 지도 (위치 확인용) ---------- */
+.minimap{border-top:1px solid var(--grid);padding:10px 14px;display:flex;gap:12px;align-items:center}
+.minimap svg{width:96px;height:auto;flex:none}
+.minimap .cap{font-size:11.5px;color:var(--ink-dim)}
+.land{fill:#0b2c3e;stroke:var(--line);stroke-width:1.1;stroke-linejoin:round}
+.dot{fill:var(--dawn);stroke:var(--deep);stroke-width:1.2}
+.dot.on{fill:#fff}
+
+/* ---------- 결과 ---------- */
+.empty{border:1px dashed var(--grid);border-radius:var(--r);padding:44px 20px;text-align:center;color:var(--ink-dim)}
+.spotname{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:6px 2px 12px}
+.spotname h2{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.spotname span{color:var(--ink-dim);font-size:12.5px}
+
+.now{background:var(--panel);border:1px solid var(--grid);border-radius:var(--r);padding:16px;margin-bottom:12px;
+  display:grid;grid-template-columns:130px 1fr;gap:18px;align-items:start}
+@media(max-width:560px){.now{grid-template-columns:1fr;gap:14px}}
+.score b{display:block;font-size:44px;font-weight:700;line-height:1;letter-spacing:-.03em;color:var(--swell);text-align:center}
+.score i{display:block;font-style:normal;font-size:12.5px;color:var(--ink-dim);margin:6px 0 12px;text-align:center}
+.bd{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center;font-size:11px;color:var(--ink-dim)}
+.bd em{font-style:normal}
+.bd span{height:4px;background:var(--grid);border-radius:2px;overflow:hidden}
+.bd span i{display:block;height:100%;background:var(--swell);border-radius:2px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:13px 16px}
+.facts dt{font-size:11.5px;color:var(--ink-dim)}
+.facts dd{font-size:16px;font-weight:600;margin-top:2px}
+.facts dd small{font-size:11.5px;font-weight:400;color:var(--ink-dim);margin-left:3px}
+.tag{display:inline-block;border-radius:5px;padding:1px 7px;font-size:11.5px;font-weight:600}
+.tag.off,.tag.good{background:rgba(63,201,220,.16);color:var(--swell)}
+.tag.side,.tag.mid{background:rgba(240,178,63,.16);color:var(--dawn)}
+.tag.on,.tag.bad{background:rgba(224,112,95,.16);color:var(--warn)}
+.trend{font-size:12.5px;color:var(--dawn);font-weight:600}
+.alert{border-left:3px solid var(--warn);background:rgba(224,112,95,.09);padding:9px 13px;border-radius:0 6px 6px 0;margin-bottom:12px;font-size:13.5px}
+.alert b{color:var(--warn)}
+
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:560px){.cols{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--grid);border-radius:var(--r);padding:13px 15px}
+.box h3{font-size:12px;font-weight:600;color:var(--ink-dim);margin-bottom:8px;display:flex;align-items:center;flex-wrap:wrap}
+.box p{font-size:13.5px}
+.tide{display:flex;flex-wrap:wrap;gap:6px 16px}
+.tide div{font-size:13.5px}
+.tide em{font-style:normal;color:var(--ink-dim);font-size:11.5px;margin-right:4px}
+
+.days{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.days button{min-height:40px;background:transparent;border:1px solid var(--grid);color:var(--ink-dim);
+  border-radius:8px;padding:6px 13px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;flex:none}
+.days button[aria-pressed="true"]{background:var(--panel);border-color:var(--line);color:var(--ink)}
+.graph{background:var(--panel);border:1px solid var(--grid);border-radius:var(--r);padding:14px 10px 8px}
+.graph svg{display:block;width:100%;height:auto}
+.gridline{stroke:var(--grid);stroke-width:1}
+.gridtext{fill:var(--ink-dim);font-size:10px;font-family:inherit}
+.night{fill:rgba(4,20,29,.55)}
+.wavearea{fill:rgba(63,201,220,.18)}
+.waveline{fill:none;stroke:var(--swell);stroke-width:2;stroke-linejoin:round}
+.tideline{fill:none;stroke:var(--ink-dim);stroke-width:1.2;stroke-dasharray:4 3;opacity:.8}
+.hourtext{fill:var(--ink-dim);font-size:10.5px;font-family:inherit}
+.windarrow{stroke:var(--ink-dim);stroke-width:1.3;fill:none}
+.windarrow.off{stroke:var(--swell)}
+.bestband{fill:rgba(240,178,63,.12);stroke:var(--dawn);stroke-width:1;stroke-dasharray:3 3}
+.tidemark{fill:var(--ink-dim);font-size:9.5px;font-family:inherit}
+.best{margin-top:12px;border-left:3px solid var(--dawn);padding:10px 13px;background:rgba(240,178,63,.07);border-radius:0 6px 6px 0;font-size:13.5px}
+.best b{color:var(--dawn)}
+.note{margin-top:16px;color:var(--ink-dim);font-size:12px;line-height:1.7}
+.note a{color:var(--ink-dim)}
+
+.mini{min-height:32px;background:transparent;border:1px solid var(--grid);color:var(--ink-dim);border-radius:6px;
+  padding:3px 11px;font:inherit;font-size:12px;cursor:pointer;margin-left:auto}
+.mini:hover{color:var(--ink);border-color:var(--line)}
+dl.kv div{display:flex;gap:10px;padding:3px 0;font-size:13.5px}
+dl.kv dt{color:var(--ink-dim);min-width:90px;flex:none}
+.form label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:11px}
+.form input,.form select{width:100%;min-height:var(--tap);background:var(--hull);border:1px solid var(--grid);color:var(--ink);
+  border-radius:8px;padding:8px 11px;font:inherit;font-size:15px;margin-top:4px}
+.form .pair{display:flex;gap:8px}
+.form .pair input{width:50%}
+.form .btns{display:flex;gap:8px;margin-top:6px}
+.form button{min-height:var(--tap);flex:1;background:transparent;border:1px solid var(--grid);color:var(--ink);
+  border-radius:8px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.form button.primary{background:var(--swell);border-color:var(--swell);color:#04141d;font-weight:700}
+.pick{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.pick button{min-height:38px;background:transparent;border:1px solid var(--grid);color:var(--ink-dim);border-radius:999px;
+  padding:5px 13px;font:inherit;font-size:13px;cursor:pointer}
+.pick button[aria-pressed="true"]{background:var(--swell);border-color:var(--swell);color:#04141d;font-weight:700}
+.calib{margin:10px 0 4px;padding:8px 11px;background:rgba(63,201,220,.08);border-left:2px solid var(--swell);
+  border-radius:0 5px 5px 0;font-size:13px}
+.calib b{color:var(--swell)}
+ul.loglist{list-style:none;margin-top:8px}
+ul.loglist li{padding:7px 0;border-top:1px solid var(--grid);font-size:13px}
+ul.loglist li b{font-weight:600;color:var(--ink-dim);margin-right:6px;font-size:11.5px}
+ul.loglist li small{color:var(--ink-dim);margin-left:6px;font-size:11px}
+ul.loglist li i{display:block;color:var(--ink-dim);font-style:normal;font-size:12px;margin-top:2px}
+.synced{font-size:11px;padding:1px 6px;border-radius:4px;margin-left:6px}
+.synced.on{background:rgba(63,201,220,.16);color:var(--swell)}
+.synced.off{background:rgba(240,178,63,.16);color:var(--dawn)}
+.s0{color:var(--ink-dim);font-size:12px;margin-top:6px}
+.err{border:1px solid var(--warn);border-radius:var(--r);padding:16px}
+.err b{color:var(--warn);display:block;margin-bottom:4px}
+.loading{color:var(--ink-dim);padding:34px 0;text-align:center}
+
+/* 설정(Supabase) 시트 */
+.cfgbtn{margin-left:auto;min-height:34px;background:transparent;border:1px solid var(--grid);color:var(--ink-dim);
+  border-radius:7px;padding:5px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+dialog{background:var(--hull);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:0;
+  max-width:460px;width:92vw}
+dialog::backdrop{background:rgba(2,10,15,.72)}
+.sheet{padding:18px}
+.sheet h2{font-size:16px;margin-bottom:4px}
+.sheet p{font-size:12.5px;color:var(--ink-dim);margin-bottom:14px}
+.sheet label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:12px}
+.sheet input{width:100%;min-height:var(--tap);background:var(--panel);border:1px solid var(--grid);color:var(--ink);
+  border-radius:8px;padding:8px 11px;font:inherit;font-size:14px;margin-top:4px}
+.sheet .btns{display:flex;gap:8px;margin-top:6px}
+.sheet button{min-height:var(--tap);flex:1;border-radius:8px;font:inherit;font-size:14px;cursor:pointer;
+  border:1px solid var(--grid);background:transparent;color:var(--ink)}
+.sheet button.primary{background:var(--swell);border-color:var(--swell);color:#04141d;font-weight:700}
+.status{font-size:12px;margin-top:10px;color:var(--ink-dim)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<header>🌊 해변 CCTV 모음</header>
-<main>
-  <div class="beach-card">
-    <h2>부산 송정해변</h2>
-    <button onclick="window.open('https://www.cctv-world.kr/cctv/beach2/songjeong','_blank')">
-      🔗 원본 보기
-    </button>
-  </div>
+<div class="wrap">
+<header>
+  <h1>파도 읽기</h1>
+  <p>해변을 고르면 파도·바람·물때를 시간대별로</p>
+  <button class="cfgbtn" id="cfgBtn">동기화 설정</button>
+</header>
 
-  <div class="beach-card">
-    <h2>양양 주문진</h2>
-    <button onclick="window.open('https://www.badatime.com/cctv/112','_blank')">
-      🔗 원본 보기
-    </button>
-  </div>
+<section class="picker">
+  <div class="crumbs" id="crumbs"></div>
+  <div class="step" id="step"></div>
+  <div class="minimap" id="minimap" hidden></div>
+</section>
 
-  <div class="beach-card">
-    <h2>고성 천진 해변</h2>
-    <button onclick="window.open('https://www.wsbfarm.com/wavecam/WaveCamList?beach=GCJ1','_blank')">
-      🔗 원본 보기
-    </button>
+<section id="result">
+  <div class="empty">해역을 골라 시작하세요.</div>
+</section>
+</div>
+
+<dialog id="cfgDlg">
+  <div class="sheet">
+    <h2>Supabase 동기화</h2>
+    <p>기록과 프로필을 여러 기기에서 공유합니다. 비워 두면 이 기기에만 저장됩니다.
+       키는 공개용(sb_publishable_… 또는 anon) 키만 넣으세요.</p>
+    <label>Project URL
+      <input id="cfgUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
+    <label>Publishable / anon key
+      <input id="cfgKey" type="text" placeholder="sb_publishable_… 또는 eyJ…" autocomplete="off"></label>
+    <div class="btns">
+      <button id="cfgTest">연결 확인</button>
+      <button id="cfgSave" class="primary">저장</button>
+    </div>
+    <button id="cfgClose" style="width:100%;margin-top:8px">닫기</button>
+    <p class="status" id="cfgStatus"></p>
   </div>
-      <div class="beach-card">
-    <h2>만리포 해변</h2>
-    <button onclick="window.open('https://coast.mof.go.kr/coastScene/coastMediaService.do','_blank')">
-      🔗 원본 보기
-    </button>
+</dialog>
+
+<script>
+const SPOTS=[
+ {coast:"동해",region:"고성",name:"아야진",lat:38.2680,lon:128.5560,facing:85},
+ {coast:"동해",region:"고성",name:"봉포",lat:38.2280,lon:128.5620,facing:90},
+ {coast:"동해",region:"속초",name:"속초해변",lat:38.1830,lon:128.6010,facing:90},
+ {coast:"동해",region:"속초",name:"외옹치",lat:38.1720,lon:128.6080,facing:100},
+ {coast:"동해",region:"양양",name:"설악(물치)",lat:38.1520,lon:128.6180,facing:90},
+ {coast:"동해",region:"양양",name:"낙산",lat:38.1210,lon:128.6350,facing:90},
+ {coast:"동해",region:"양양",name:"하조대",lat:38.0630,lon:128.6950,facing:90},
+ {coast:"동해",region:"양양",name:"기사문",lat:38.0400,lon:128.7050,facing:90},
+ {coast:"동해",region:"양양",name:"죽도",lat:38.0233,lon:128.7167,facing:95},
+ {coast:"동해",region:"양양",name:"인구",lat:38.0180,lon:128.7185,facing:100},
+ {coast:"동해",region:"양양",name:"동산항",lat:38.0100,lon:128.7250,facing:95},
+ {coast:"동해",region:"양양",name:"남애",lat:37.9560,lon:128.7690,facing:90},
+ {coast:"동해",region:"강릉",name:"사천",lat:37.8480,lon:128.8650,facing:90},
+ {coast:"동해",region:"강릉",name:"경포",lat:37.8020,lon:128.9100,facing:90},
+ {coast:"동해",region:"강릉",name:"안목",lat:37.7730,lon:128.9490,facing:90},
+ {coast:"동해",region:"강릉",name:"남항진",lat:37.7660,lon:128.9520,facing:95},
+ {coast:"동해",region:"강릉",name:"정동진",lat:37.6900,lon:129.0350,facing:90},
+ {coast:"동해",region:"강릉",name:"금진",lat:37.6180,lon:129.0510,facing:90},
+ {coast:"동해",region:"동해·삼척",name:"망상",lat:37.5820,lon:129.0900,facing:80},
+ {coast:"동해",region:"동해·삼척",name:"맹방",lat:37.3900,lon:129.2130,facing:95},
+ {coast:"동해",region:"영덕",name:"장사",lat:36.4200,lon:129.4200,facing:95},
+ {coast:"동해",region:"포항",name:"월포",lat:36.2350,lon:129.3800,facing:90},
+ {coast:"동해",region:"포항",name:"용한리",lat:36.1500,lon:129.3900,facing:80},
+ {coast:"동해",region:"포항",name:"신항만",lat:36.0600,lon:129.4200,facing:110},
+ {coast:"남해",region:"부산",name:"송정",lat:35.1790,lon:129.1990,facing:135},
+ {coast:"남해",region:"부산",name:"해운대",lat:35.1590,lon:129.1600,facing:165},
+ {coast:"남해",region:"부산",name:"광안리",lat:35.1530,lon:129.1180,facing:180},
+ {coast:"남해",region:"부산",name:"다대포",lat:35.0450,lon:128.9660,facing:210},
+ {coast:"서해",region:"인천",name:"을왕리",lat:37.4470,lon:126.3720,facing:280},
+ {coast:"서해",region:"태안",name:"학암포",lat:36.8600,lon:126.1600,facing:290},
+ {coast:"서해",region:"태안",name:"만리포",lat:36.7900,lon:126.1450,facing:270},
+ {coast:"서해",region:"태안",name:"몽산포",lat:36.6600,lon:126.3050,facing:250},
+ {coast:"서해",region:"보령",name:"대천",lat:36.3200,lon:126.5100,facing:265},
+ {coast:"제주",region:"제주시",name:"이호테우",lat:33.4980,lon:126.4530,facing:340},
+ {coast:"제주",region:"제주시",name:"협재",lat:33.3940,lon:126.2400,facing:300},
+ {coast:"제주",region:"제주시",name:"김녕",lat:33.5580,lon:126.7550,facing:20},
+ {coast:"제주",region:"제주시",name:"월정리",lat:33.5560,lon:126.7950,facing:10},
+ {coast:"제주",region:"서귀포",name:"중문색달",lat:33.2450,lon:126.4100,facing:190},
+ {coast:"제주",region:"서귀포",name:"사계",lat:33.2280,lon:126.3120,facing:200},
+ {coast:"제주",region:"서귀포",name:"표선",lat:33.3250,lon:126.8380,facing:150},
+];
+const COAST=[[128.35,38.60],[128.55,38.30],[128.75,38.10],[129.00,37.65],[129.20,37.30],
+[129.35,37.05],[129.42,36.70],[129.43,36.35],[129.57,36.08],[129.42,35.95],[129.45,35.70],
+[129.30,35.50],[129.10,35.15],[128.85,35.08],[128.62,34.97],[128.40,35.05],[128.10,34.90],
+[127.85,34.75],[127.70,34.60],[127.55,34.80],[127.30,34.72],[126.95,34.60],[126.70,34.45],
+[126.52,34.30],[126.38,34.60],[126.30,35.00],[126.42,35.35],[126.48,35.65],[126.60,35.90],
+[126.55,36.12],[126.45,36.45],[126.35,36.65],[126.22,36.78],[126.15,36.88],[126.35,37.05],
+[126.50,37.25],[126.62,37.45],[126.60,37.70],[126.78,37.95],[127.10,38.25],[127.60,38.32],
+[128.00,38.42],[128.35,38.60]];
+const K=105,PADX=22,PADY=18,LON0=125.90,LAT0=38.78,KX=0.809;
+const px=lon=>(lon-LON0)*KX*K+PADX, py=lat=>(LAT0-lat)*K+PADY;
+
+/* ================= 계산 ================= */
+const DIR16=["북","북북동","북동","동북동","동","동남동","남동","남남동","남","남남서","남서","서남서","서","서북서","북서","북북서"];
+const compass=d=>d==null?"–":DIR16[Math.round(((d%360)+360)%360/22.5)%16];
+const angDiff=(a,b)=>Math.abs(((a-b+540)%360)-180);
+const n0=v=>typeof v==="number"?String(Math.round(v)):"–";
+const n1=v=>typeof v==="number"?v.toFixed(1):"–";
+const n2=v=>typeof v==="number"?v.toFixed(2):"–";
+
+function windRel(from,facing){
+  if(from==null) return {label:"–",q:.5,cls:"side"};
+  const d=angDiff(from,(facing+180)%360);
+  if(d<=45) return {label:"오프쇼어",q:1,cls:"off"};
+  if(d<=100) return {label:"사이드",q:.5,cls:"side"};
+  return {label:"온쇼어",q:0,cls:"on"};
+}
+/* 스웰이 해변 정면으로 들어오는 정도. 90도를 넘으면 육지에 가려 도달하지 않는다 */
+function swellWindow(from,facing){
+  if(from==null) return {q:.5,label:"–",cls:"mid"};
+  const d=angDiff(from,facing);
+  let q;
+  if(d<=35) q=1;
+  else if(d<=70) q=1-(d-35)/35*0.5;
+  else if(d<=90) q=0.5-(d-70)/20*0.35;
+  else q=Math.max(0,0.15-(d-90)/40*0.15);
+  const label=d<=35?"정면":d<=70?"비스듬":d<=90?"측면":"가림";
+  return {q,label,cls:q>=.75?"good":q>=.4?"mid":"bad",deg:d};
+}
+/* 스웰 대 풍랑 비율 = 파도가 정돈된 정도 */
+function cleanliness(sw,ww){
+  if(sw==null&&ww==null) return {q:.5,label:"–",cls:"mid"};
+  const s=sw||0,w=ww||0;
+  if(s+w<0.05) return {q:.3,label:"–",cls:"mid"};
+  const r=s/(s+w);
+  return {q:r,label:r>=.7?"클린":r>=.45?"보통":"초피",cls:r>=.7?"good":r>=.45?"mid":"bad",ratio:r};
+}
+function evaluate(h,p,wind,windQ,swQ,clQ){
+  if(h==null) return null;
+  let sh;
+  if(h<0.3) sh=0; else if(h<0.8) sh=(h-0.3)/0.5*0.7;
+  else if(h<=1.8) sh=1; else if(h<=3.0) sh=Math.max(.3,1-(h-1.8)/1.2*.6); else sh=.25;
+  const per=p||0, sp=per<4?0:Math.min(1,(per-4)/6);
+  const ws=wind==null?5:wind, sw=Math.max(0,1-ws/12)*(0.45+0.55*windQ);
+  const parts={파고:sh,주기:sp,바람:sw,스웰각:swQ,정돈도:clQ};
+  const total=sh*.30+sp*.20+sw*.22+swQ*.16+clQ*.12;
+  return {total:Math.round(total*100)/10,parts};
+}
+const verdict=s=>s==null?"자료 없음":s>=7.5?"아주 좋음":s>=6?"좋음":s>=4.5?"탈 만함":s>=3?"아쉬움":"플랫에 가까움";
+
+function wetsuit(t){
+  if(t==null) return "수온 자료 없음";
+  if(t>=24) return "래시가드 또는 보드숏";
+  if(t>=21) return "2mm 탑 또는 스프링";
+  if(t>=18) return "3/2 풀슈트";
+  if(t>=15) return "4/3 풀슈트";
+  if(t>=12) return "4/3 풀슈트 + 부츠";
+  if(t>=9)  return "5/4 풀슈트 + 부츠·글러브·후드";
+  return "5/4/3 세미드라이 + 부츠·글러브·후드";
+}
+const WMO={0:"맑음",1:"대체로 맑음",2:"구름 조금",3:"흐림",45:"안개",48:"착빙 안개",
+51:"약한 이슬비",53:"이슬비",55:"짙은 이슬비",56:"어는 이슬비",57:"어는 이슬비",
+61:"약한 비",63:"비",65:"강한 비",66:"어는 비",67:"어는 비",71:"약한 눈",73:"눈",75:"강한 눈",
+77:"싸락눈",80:"소나기",81:"강한 소나기",82:"매우 강한 소나기",85:"눈 소나기",86:"강한 눈 소나기",
+95:"뇌우",96:"우박 동반 뇌우",99:"우박 동반 강한 뇌우"};
+const fmtH=f=>{let h=Math.floor(f),m=Math.round((f-h)*60);if(m===60){h++;m=0}
+  return String((h+24)%24).padStart(2,"0")+":"+String(m).padStart(2,"0")};
+
+/* 조위 곡선의 극값에서 만조·간조를 근사한다 */
+function tideEvents(rows){
+  const out=[];
+  for(let i=1;i<rows.length-1;i++){
+    const a=rows[i-1].tide,b=rows[i].tide,c=rows[i+1].tide;
+    if(a==null||b==null||c==null) continue;
+    const up=b-a, dn=c-b;
+    if(up>=0&&dn<0||up<=0&&dn>0){
+      const den=a-2*b+c;
+      let d=den===0?0:0.5*(a-c)/den; d=Math.max(-1,Math.min(1,d));
+      out.push({label:up>=0&&dn<0?"만조":"간조",hour:rows[i].hour+d,
+        level:b-0.25*(a-c)*d});
+    }
+  }
+  return out;
+}
+
+
+
+/* ================= 저장 계층 (로컬 + Supabase) ================= */
+const LS = {
+  get(k, d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+};
+const cfg = () => LS.get("surf.cfg", { url:"", key:"" });
+const hasCloud = () => { const c=cfg(); return !!(c.url && c.key); };
+function clientId(){
+  let id = LS.get("surf.cid", null);
+  if(!id){ id = "c" + Math.random().toString(36).slice(2,10); LS.set("surf.cid", id); }
+  return id;
+}
+function sbHeaders(extra){
+  const c = cfg();
+  return Object.assign({ apikey:c.key, Authorization:"Bearer "+c.key,
+    "Content-Type":"application/json" }, extra||{});
+}
+async function sb(path, opts){
+  const c = cfg();
+  const res = await fetch(c.url.replace(/\/$/,"") + "/rest/v1/" + path,
+    Object.assign({ headers: sbHeaders(opts && opts.headers) }, opts));
+  if(!res.ok){ const t = await res.text(); throw new Error(`${res.status} ${t}`); }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+/* 로컬 캐시 (오프라인·미설정 시 단독 동작) */
+const localProfiles = () => LS.get("surf.profiles", {});
+const localLogs     = () => LS.get("surf.logs", []);
+const pendingLogs   = () => LS.get("surf.pending", []);   // 클라우드 전송 대기 큐
+let profileCache = null, logCache = null;
+
+async function loadProfile(spot){
+  const local = localProfiles()[spot] || null;
+  if(!hasCloud()) return local;
+  try{
+    const rows = await sb(`spot_profiles?spot=eq.${encodeURIComponent(spot)}&limit=1`);
+    if(rows && rows[0]){
+      const r = rows[0];
+      const pf = { bottom:r.bottom||"", level:r.level||"", tide:r.tide_pref||"",
+        swellFrom:r.swell_from, swellTo:r.swell_to, blockFrom:r.block_from, blockTo:r.block_to, note:r.note||"" };
+      const all = localProfiles(); all[spot] = pf; LS.set("surf.profiles", all);   // 캐시
+      return pf;
+    }
+    return local;
+  }catch(e){ return local; }
+}
+async function saveProfile(spot, pf){
+  const all = localProfiles(); all[spot] = pf; LS.set("surf.profiles", all);       // 항상 로컬 먼저
+  if(!hasCloud()) return { ok:true, cloud:false };
+  try{
+    await sb("spot_profiles", { method:"POST",
+      headers:{ Prefer:"resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ spot, bottom:pf.bottom||null, level:pf.level||null,
+        tide_pref:pf.tide||null, swell_from:pf.swellFrom, swell_to:pf.swellTo,
+        block_from:pf.blockFrom, block_to:pf.blockTo, note:pf.note||null, updated_at:new Date().toISOString() }) });
+    return { ok:true, cloud:true };
+  }catch(e){ return { ok:true, cloud:false, err:e.message }; }
+}
+
+async function loadLogs(spot){
+  if(!hasCloud()) return localLogs().filter(l=>l.spot===spot);
+  try{
+    const rows = await sb(`surf_logs?spot=eq.${encodeURIComponent(spot)}&order=observed_at.desc&limit=60`);
+    return (rows||[]).map(r=>({ id:"sb"+r.id, spot:r.spot, at:r.observed_at.slice(0,16),
+      date:r.surf_date, size:r.size_label, clean:r.clean, crowd:r.crowd, note:r.note,
+      model:{ wave:r.model_wave, period:r.model_period, swellD:r.model_swell_dir,
+        wind:r.model_wind, windDir:r.model_wind_dir, rel:r.model_wind_rel,
+        tide:r.model_tide, score:r.model_score }, cloud:true }));
+  }catch(e){ return localLogs().filter(l=>l.spot===spot); }
+}
+async function dailyCount(spot, date){
+  if(!hasCloud()){
+    return localLogs().filter(l=>l.spot===spot && (l.date||l.at.slice(0,10))===date).length;
+  }
+  try{
+    const rows = await sb(`surf_logs?spot=eq.${encodeURIComponent(spot)}&surf_date=eq.${date}&select=id`,
+      { headers:{ Prefer:"count=exact" } });
+    return (rows||[]).length;
+  }catch(e){
+    return localLogs().filter(l=>l.spot===spot && (l.date||l.at.slice(0,10))===date).length;
+  }
+}
+async function addLog(entry){
+  // 항상 로컬에 남긴다
+  const all = localLogs(); all.push(entry); LS.set("surf.logs", all);
+  if(!hasCloud()) return { ok:true, cloud:false };
+  const payload = { spot:entry.spot, surf_date:entry.date, observed_at:new Date().toISOString(),
+    size_label:entry.size, clean:entry.clean, crowd:entry.crowd, note:entry.note||null,
+    model_wave:entry.model.wave, model_period:entry.model.period, model_swell_dir:entry.model.swellD,
+    model_wind:entry.model.wind, model_wind_dir:entry.model.windDir, model_wind_rel:entry.model.rel,
+    model_tide:entry.model.tide, model_score:entry.model.score, client_id:clientId() };
+  try{
+    await sb("surf_logs", { method:"POST",
+      headers:{ Prefer:"return=minimal" }, body: JSON.stringify(payload) });
+    return { ok:true, cloud:true };
+  }catch(e){
+    if(/DAILY_CAP_REACHED/.test(e.message)) return { ok:false, cap:true };
+    // 네트워크 실패 → 대기 큐에 저장, 다음에 재전송
+    const q = pendingLogs(); q.push(payload); LS.set("surf.pending", q);
+    return { ok:true, cloud:false, queued:true };
+  }
+}
+async function flushPending(){
+  if(!hasCloud()) return;
+  const q = pendingLogs(); if(!q.length) return;
+  const rest = [];
+  for(const p of q){
+    try{ await sb("surf_logs", { method:"POST", headers:{ Prefer:"return=minimal" }, body:JSON.stringify(p) }); }
+    catch(e){ if(!/DAILY_CAP_REACHED/.test(e.message)) rest.push(p); }
+  }
+  LS.set("surf.pending", rest);
+}
+
+/* ================= 상수 ================= */
+const MARINE="https://marine-api.open-meteo.com/v1/marine";
+const FORECAST="https://api.open-meteo.com/v1/forecast";
+const MFULL=["wave_height","wave_direction","wave_period","wind_wave_height","wind_wave_direction",
+  "swell_wave_height","swell_wave_direction","swell_wave_period",
+  "secondary_swell_wave_height","secondary_swell_wave_direction","secondary_swell_wave_period",
+  "sea_surface_temperature","sea_level_height_msl","ocean_current_velocity","ocean_current_direction"];
+const MCORE=["wave_height","wave_direction","wave_period","wind_wave_height",
+  "swell_wave_height","swell_wave_direction","swell_wave_period","sea_surface_temperature","sea_level_height_msl"];
+const WVARS=["wind_speed_10m","wind_direction_10m","wind_gusts_10m","temperature_2m","precipitation","weather_code"];
+const BOTTOM=["모래","사주","리프","자갈","혼합"];
+const TIDEPREF={ "":"무관", high:"만조에 좋음", mid:"중간물에 좋음", low:"간조에 좋음" };
+const LEVELS=["초급","중급","상급"];
+const SIZES=["발목","무릎","허벅지","허리","가슴","어깨","머리","오버헤드"];
+const SIZE_CM={발목:20,무릎:40,허벅지:60,허리:85,가슴:110,어깨:130,머리:160,오버헤드:210};
+const CLEANS=["클린","보통","초피","정크"];
+
+/* 프로필 반영 판정 */
+function swellWindowP(from,facing,pf){
+  if(from==null) return {q:.5,label:"–",cls:"mid",byProfile:false};
+  if(pf&&pf.swellFrom!=null&&pf.swellTo!=null){
+    const a=pf.swellFrom,b=pf.swellTo,span=((b-a+360)%360)||360,off=(from-a+360)%360;
+    if(off<=span){const edge=Math.min(off,span-off);
+      return {q:edge>=15?1:0.7+edge/15*0.3,label:"잘 받는 각",cls:"good",byProfile:true};}
+    const gap=Math.min((from-b+360)%360,(a-from+360)%360);
+    return {q:gap<=25?0.5:gap<=60?0.25:0.05,label:gap<=25?"가장자리":"안 받는 각",cls:gap<=25?"mid":"bad",byProfile:true};}
+  return Object.assign(swellWindow(from,facing),{byProfile:false});
+}
+function windRelP(from,facing,pf){
+  const base=windRel(from,facing);
+  if(from==null||!pf||pf.blockFrom==null||pf.blockTo==null) return base;
+  const span=((pf.blockTo-pf.blockFrom+360)%360)||360, off=(from-pf.blockFrom+360)%360;
+  if(off<=span&&base.q<0.75) return {label:base.label+" (차폐)",q:0.75,cls:"side",byProfile:true};
+  return base;
+}
+
+/* ================= 선택 흐름 (탭) ================= */
+const COASTS=["동해","남해","서해","제주"];
+let selCoast=null, selRegion=null, activeSpot=null, data=null, daily=null, dayIdx=0;
+const $step=document.getElementById("step");
+const $crumbs=document.getElementById("crumbs");
+const $mini=document.getElementById("minimap");
+const $result=document.getElementById("result");
+
+const regionsOf=coast=>{
+  const m=new Map();
+  SPOTS.filter(s=>s.coast===coast).forEach(s=>{
+    if(!m.has(s.region)) m.set(s.region,[]); m.get(s.region).push(s); });
+  return [...m.entries()].map(([region,spots])=>({region,spots,
+    lat:spots.reduce((a,s)=>a+s.lat,0)/spots.length,lon:spots.reduce((a,s)=>a+s.lon,0)/spots.length}));
+};
+
+function renderCrumbs(){
+  const parts=[`<button data-lvl="coast">해역</button>`];
+  if(selCoast) parts.push(`<span class="sep">›</span><button data-lvl="region"><b>${selCoast}</b></button>`);
+  if(selRegion) parts.push(`<span class="sep">›</span><button data-lvl="spot"><b>${selRegion}</b></button>`);
+  if(activeSpot) parts.push(`<span class="sep">›</span><b>${activeSpot.name}</b>`);
+  $crumbs.innerHTML=parts.join("");
+}
+$crumbs.onclick=e=>{const b=e.target.closest("button");if(!b)return;
+  const lvl=b.dataset.lvl;
+  if(lvl==="coast"){selCoast=null;selRegion=null;}
+  else if(lvl==="region"){selRegion=null;}
+  renderPicker();
+};
+
+function renderPicker(){
+  renderCrumbs();
+  if(!selCoast){
+    $step.innerHTML=`<h2>해역 선택</h2><div class="grid coast">`+
+      COASTS.map(c=>`<button data-coast="${c}">${c}<small>${SPOTS.filter(s=>s.coast===c).length}곳</small></button>`).join("")+`</div>`;
+    $mini.hidden=true;
+  } else if(!selRegion){
+    const rs=regionsOf(selCoast);
+    $step.innerHTML=`<h2>${selCoast} · 지역 선택</h2><div class="grid region">`+
+      rs.map(r=>`<button data-region="${r.region}">${r.region}<small>${r.spots.length}곳</small></button>`).join("")+`</div>`;
+    drawMini(rs.map(r=>({lat:r.lat,lon:r.lon})), null);
+  } else {
+    const spots=SPOTS.filter(s=>s.coast===selCoast&&s.region===selRegion);
+    $step.innerHTML=`<h2>${selRegion} · 해변 선택</h2><div class="grid spot">`+
+      spots.map(s=>`<button data-spot="${s.name}" aria-pressed="${activeSpot&&activeSpot.name===s.name}">${s.name}</button>`).join("")+`</div>`;
+    drawMini(spots, activeSpot);
+  }
+}
+$step.onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.coast){selCoast=b.dataset.coast;renderPicker();}
+  else if(b.dataset.region){selRegion=b.dataset.region;renderPicker();}
+  else if(b.dataset.spot){pickSpot(SPOTS.find(s=>s.name===b.dataset.spot));}
+};
+
+/* 미니 지도 — 위치 확인 전용, 클릭 없음 */
+function drawMini(points, active){
+  if(!points||!points.length){$mini.hidden=true;return;}
+  $mini.hidden=false;
+  const path="M"+COAST.map(([lo,la])=>`${px(lo).toFixed(1)},${py(la).toFixed(1)}`).join("L")+"Z";
+  let dots=points.map(p=>{
+    const on=active&&Math.abs(p.lat-active.lat)<1e-4&&Math.abs(p.lon-active.lon)<1e-4;
+    return `<circle class="dot${on?" on":""}" cx="${px(p.lon).toFixed(1)}" cy="${py(p.lat).toFixed(1)}" r="${on?4:2.6}"/>`;
+  }).join("");
+  const cap = active ? `${active.name} 위치` : `${selCoast} 지역들`;
+  $mini.innerHTML=`<svg viewBox="0 0 380 640" role="img" aria-label="위치 지도">
+    <path class="land" d="${path}"/>
+    <ellipse class="land" cx="${px(126.55)}" cy="${py(33.38)}" rx="${0.44*KX*K}" ry="${0.17*K}"/>${dots}</svg>
+    <span class="cap">${cap}</span>`;
+}
+
+/* ================= 데이터 로드 ================= */
+async function pickSpot(sp){
+  activeSpot=sp; dayIdx=0; renderPicker();
+  await flushPending();
+  $result.innerHTML=`<div class="loading">${sp.name} 파도 정보를 불러오는 중…</div>`;
+  const q=`latitude=${sp.lat}&longitude=${sp.lon}&timezone=Asia%2FSeoul&forecast_days=4`;
+  try{
+    profileCache = await loadProfile(sp.name);
+    let m=await fetch(`${MARINE}?${q}&hourly=${MFULL.join(",")}`).then(r=>r.json());
+    if(m.error) m=await fetch(`${MARINE}?${q}&hourly=${MCORE.join(",")}`).then(r=>r.json());
+    if(m.error) throw new Error(m.reason||"해양 자료 요청 오류");
+    const w=await fetch(`${FORECAST}?${q}&hourly=${WVARS.join(",")}&daily=sunrise,sunset,uv_index_max&wind_speed_unit=ms`).then(r=>r.json());
+    daily=w.daily||null;
+    data=merge(m,w,sp);
+    if(!data.length||data.every(h=>h.wave==null)) throw new Error("이 지점은 파랑 모델 격자 밖입니다. 인근 해변을 골라 보세요.");
+    logCache = await loadLogs(sp.name);
+    renderResult();
+  }catch(err){
+    $result.innerHTML=`<div class="err"><b>데이터를 불러오지 못했습니다</b>${err.message}<br><br>
+      브라우저에서 이 파일을 직접 열었는지, 인터넷이 연결돼 있는지 확인해 주세요.</div>`;
+  }
+}
+function merge(m,w,sp){
+  const facing=sp.facing, pf=profileCache;
+  const mh=m.hourly||{},wh=w.hourly||{},wi={};
+  (wh.time||[]).forEach((t,i)=>wi[t]=i);
+  const tideAll=(mh.sea_level_height_msl||[]).filter(v=>v!=null);
+  const tmin=tideAll.length?Math.min(...tideAll):null, tmax=tideAll.length?Math.max(...tideAll):null;
+  const rows=(mh.time||[]).map((t,i)=>{
+    const j=wi[t],g=k=>j==null||!wh[k]?null:wh[k][j];
+    const wd=g("wind_direction_10m"),ws=g("wind_speed_10m");
+    const h=mh.wave_height?.[i],p=mh.wave_period?.[i];
+    const swH=mh.swell_wave_height?.[i],swD=mh.swell_wave_direction?.[i],swP=mh.swell_wave_period?.[i];
+    const wwH=mh.wind_wave_height?.[i],tide=mh.sea_level_height_msl?.[i];
+    const rel=windRelP(wd,facing,pf), win=swellWindowP(swD??mh.wave_direction?.[i],facing,pf), cl=cleanliness(swH,wwH);
+    const ev=evaluate(h,p,ws,rel.q,win.q,cl.q);
+    let tideFit=null;
+    if(pf&&pf.tide&&tide!=null&&tmin!=null&&tmax>tmin){
+      const pos=(tide-tmin)/(tmax-tmin);
+      tideFit=pf.tide==="high"?pos:pf.tide==="low"?1-pos:1-Math.abs(pos-0.5)*2;
+      if(ev) ev.total=Math.round(ev.total*(0.94+0.12*tideFit)*10)/10;}
+    return {t,date:t.slice(0,10),hour:+t.slice(11,13),
+      wave:h,period:p,dir:mh.wave_direction?.[i],swellH:swH,swellP:swP,swellD:swD,
+      sw2H:mh.secondary_swell_wave_height?.[i],sw2D:mh.secondary_swell_wave_direction?.[i],sw2P:mh.secondary_swell_wave_period?.[i],
+      windWave:wwH,sst:mh.sea_surface_temperature?.[i],tide,
+      curV:mh.ocean_current_velocity?.[i],curD:mh.ocean_current_direction?.[i],
+      wind:ws,gust:g("wind_gusts_10m"),windDir:wd,air:g("temperature_2m"),rain:g("precipitation"),code:g("weather_code"),
+      rel,win,cl,tideFit,face:h==null?null:h*1.4,power:(h==null||p==null)?null:0.49*h*h*p,
+      s:ev?ev.total:null,parts:ev?ev.parts:null};
+  });
+  rows.forEach((r,i)=>{const a=rows[i-3]?.wave,b=rows[i+3]?.wave;
+    r.trend=(a==null||b==null)?0:(b-a>0.12?1:b-a<-0.12?-1:0);});
+  return rows;
+}
+
+/* ================= 결과 렌더 ================= */
+function renderResult(){
+  const sp=activeSpot,now=new Date();
+  const cur=data.reduce((a,b)=>Math.abs(new Date(b.t)-now)<Math.abs(new Date(a.t)-now)?b:a);
+  const dates=[...new Set(data.map(h=>h.date))],day=dates[dayIdx];
+  const all=data.filter(h=>h.date===day);
+  const best=all.filter(h=>h.s!=null&&h.hour>=5&&h.hour<=19).reduce((a,b)=>!a||b.s>a.s?b:a,null);
+  const tides=tideEvents(all);
+  const di=daily?daily.time.indexOf(day):-1;
+  const sun=di>=0?{rise:daily.sunrise[di].slice(11,16),set:daily.sunset[di].slice(11,16),uv:daily.uv_index_max?.[di]}:null;
+  const pf=profileCache;
+  const cross=(cur.sw2H!=null&&cur.swellH!=null&&cur.sw2H>=cur.swellH*0.5&&cur.sw2D!=null&&cur.swellD!=null&&angDiff(cur.sw2D,cur.swellD)>40);
+  const alerts=[];
+  if(cur.code>=95) alerts.push(`${WMO[cur.code]||"뇌우"} 예보 — 입수하지 마세요.`);
+  if(cur.gust>=14) alerts.push(`돌풍 ${n0(cur.gust)}m/s — 강풍으로 파도가 무너집니다.`);
+  if(cur.wave>=2.5) alerts.push(`파고 ${n2(cur.wave)}m — 상급자 외 위험합니다.`);
+  if(cross) alerts.push(`2차 스웰이 ${compass(cur.sw2D)}에서 겹쳐 들어옵니다.`);
+  if(cur.rain>=4) alerts.push(`시간당 강수 ${n1(cur.rain)}mm — 시야·수질 저하.`);
+  const bd=cur.parts?Object.entries(cur.parts).map(([k,v])=>`<em>${k}</em><span><i style="width:${Math.round(v*100)}%"></i></span>`).join(""):"";
+  const tr=cur.trend>0?"↗ 커지는 중":cur.trend<0?"↘ 빠지는 중":"→ 유지";
+  const applied=(cur.win.byProfile||cur.rel.byProfile||cur.tideFit!=null);
+
+  $result.innerHTML=`
+  <div class="spotname"><h2>${sp.name}</h2>
+    <span>${sp.coast} · ${sp.region} · 해변이 ${compass(sp.facing)}쪽</span>
+    ${applied?`<span class="tag good">지형 반영</span>`:""}</div>
+  ${alerts.map(a=>`<p class="alert"><b>확인</b> ${a}</p>`).join("")}
+  <div class="now">
+    <div class="score"><b>${n1(cur.s)}</b><i>${verdict(cur.s)}</i><div class="bd">${bd}</div></div>
+    <dl class="facts">
+      <div><dt>파고 (페이스)</dt><dd>${n2(cur.wave)}<small>m · 얼굴 ${n1(cur.face)}m</small><br><span class="trend">${tr}</span></dd></div>
+      <div><dt>주기</dt><dd>${n0(cur.period)}<small>초</small></dd></div>
+      <div><dt>파워</dt><dd>${n0(cur.power)}<small>kW/m</small></dd></div>
+      <div><dt>스웰</dt><dd>${n1(cur.swellH)}<small>m/${n0(cur.swellP)}s ${compass(cur.swellD)}</small><br><span class="tag ${cur.win.cls}">${cur.win.label}</span></dd></div>
+      <div><dt>정돈도</dt><dd>${cur.cl.ratio!=null?Math.round(cur.cl.ratio*100):"–"}<small>% 스웰</small><br><span class="tag ${cur.cl.cls}">${cur.cl.label}</span></dd></div>
+      <div><dt>바람</dt><dd>${n1(cur.wind)}<small>m/s ${compass(cur.windDir)}</small><br><span class="tag ${cur.rel.cls}">${cur.rel.label}</span></dd></div>
+      <div><dt>돌풍</dt><dd>${n1(cur.gust)}<small>m/s</small></dd></div>
+      <div><dt>수온·기온</dt><dd>${n1(cur.sst)}<small>℃/${n0(cur.air)}℃</small></dd></div>
+      <div><dt>하늘</dt><dd style="font-size:14px">${WMO[cur.code]||"–"}<small>${cur.rain?` ${n1(cur.rain)}mm`:""}</small></dd></div>
+    </dl>
   </div>
-</main>
+  <div class="cols">
+    <div class="box"><h3>물때 (해면고 근사)</h3>
+      <div class="tide">${tides.length?tides.map(t=>`<div><em>${t.label}</em>${fmtH(t.hour)} <small style="color:var(--ink-dim)">${n2(t.level)}m</small></div>`).join(""):`<p class="hint">조위 극값 없음</p>`}</div>
+      ${pf&&pf.tide?`<p class="hint" style="margin-top:8px">${TIDEPREF[pf.tide]} — 지금 ${cur.tideFit!=null?Math.round(cur.tideFit*100)+"% 부합":"–"}</p>`:""}</div>
+    <div class="box"><h3>입수 준비</h3><p>${wetsuit(cur.sst)}</p>
+      ${sun?`<p class="hint" style="margin-top:6px">일출 ${sun.rise} · 일몰 ${sun.set}${sun.uv!=null?` · 자외선 ${n0(sun.uv)}`:""}</p>`:""}
+      ${cur.sw2H!=null?`<p class="hint" style="margin-top:6px">2차 스웰 ${n1(cur.sw2H)}m/${n0(cur.sw2P)}s ${compass(cur.sw2D)}</p>`:""}</div>
+  </div>
+  <div class="days">${dates.map((d,i)=>{const dt=new Date(d+"T00:00");
+    const lbl=i===0?"오늘":i===1?"내일":`${dt.getMonth()+1}/${dt.getDate()}`;
+    return `<button data-day="${i}" aria-pressed="${i===dayIdx}">${lbl} (${"일월화수목금토"[dt.getDay()]})</button>`;}).join("")}</div>
+  <div class="graph">${graph(all,best,tides,sun)}</div>
+  ${best?`<p class="best">가장 좋은 시간대 <b>${String(best.hour).padStart(2,"0")}시</b> — 파고 ${n2(best.wave)}m·${n0(best.period)}s, ${best.win.label}, ${best.cl.label}, ${best.rel.label} ${n1(best.wind)}m/s (${n1(best.s)}점).</p>`:""}
+  <div class="cols" style="margin-top:12px">
+    <div class="box" id="pfBox"></div>
+    <div class="box" id="logBox"></div>
+  </div>
+  <p class="note">Open-Meteo 전지구 파랑모델 예측치입니다. 국지 지형은 직접 입력한 조건으로만 보정됩니다.
+  물때는 해면고 근사값입니다. 정확한 값은 <a href="https://www.khoa.go.kr" target="_blank" rel="noopener">국립해양조사원</a>,
+  해상특보는 <a href="https://www.weather.go.kr" target="_blank" rel="noopener">기상청</a>에서 확인하세요.</p>`;
+
+  $result.querySelector(".days").onclick=e=>{const b=e.target.closest("button");if(!b)return;dayIdx=+b.dataset.day;renderResult();};
+  renderProfile(sp); renderLog(sp,cur);
+}
+
+/* ---------- 프로필 UI ---------- */
+function profileView(sp){
+  const pf=profileCache; const rows=[];
+  if(pf){
+    if(pf.bottom) rows.push(["바닥",pf.bottom]);
+    if(pf.swellFrom!=null) rows.push(["잘 받는 스웰",`${compass(pf.swellFrom)}~${compass(pf.swellTo)} (${pf.swellFrom}–${pf.swellTo}°)`]);
+    if(pf.blockFrom!=null) rows.push(["막는 바람",`${compass(pf.blockFrom)}~${compass(pf.blockTo)}`]);
+    if(pf.tide) rows.push(["물때",TIDEPREF[pf.tide]]);
+    if(pf.level) rows.push(["난이도",pf.level]);
+    if(pf.note) rows.push(["메모",pf.note]);
+  }
+  return `<h3>지형 조건${hasCloud()?'<span class="synced on">공유</span>':'<span class="synced off">이 기기</span>'}
+    <button class="mini" id="pfEdit">${rows.length?"고치기":"입력"}</button></h3>
+    ${rows.length?`<dl class="kv">${rows.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>`
+      :`<p class="hint">아직 비어 있습니다. 다녀오면서 채우면 점수에 반영됩니다.</p>`}`;
+}
+function profileForm(){
+  const p=profileCache||{};
+  const sel=(id,opts,val)=>`<select id="${id}"><option value="">–</option>`+
+    opts.map(o=>`<option ${val===o?"selected":""}>${o}</option>`).join("")+`</select>`;
+  return `<h3>지형 조건 입력</h3><div class="form">
+    <label>바닥${sel("pfBottom",BOTTOM,p.bottom)}</label>
+    <label>난이도${sel("pfLevel",LEVELS,p.level)}</label>
+    <label>잘 받는 스웰 방향(도)<div class="pair">
+      <input id="pfSwF" type="number" inputmode="numeric" min="0" max="359" placeholder="시작" value="${p.swellFrom??""}">
+      <input id="pfSwT" type="number" inputmode="numeric" min="0" max="359" placeholder="끝" value="${p.swellTo??""}"></div></label>
+    <label>막아주는 바람 방향(도)<div class="pair">
+      <input id="pfBlF" type="number" inputmode="numeric" min="0" max="359" placeholder="시작" value="${p.blockFrom??""}">
+      <input id="pfBlT" type="number" inputmode="numeric" min="0" max="359" placeholder="끝" value="${p.blockTo??""}"></div></label>
+    <label>물때<select id="pfTide">${Object.entries(TIDEPREF).map(([k,v])=>`<option value="${k}" ${p.tide===k?"selected":""}>${v}</option>`).join("")}</select></label>
+    <label>메모<input id="pfNote" type="text" maxlength="60" value="${p.note||""}" placeholder="예: 남쪽 방파제 옆이 깔끔"></label>
+    <div class="btns"><button id="pfCancel">취소</button><button id="pfSave" class="primary">저장</button></div>
+    <p class="hint">방향은 파도·바람이 <b>불어오는</b> 쪽입니다. 모르면 비워 두세요.</p></div>`;
+}
+function renderProfile(sp){
+  const box=document.getElementById("pfBox"); box.innerHTML=profileView(sp);
+  const ed=document.getElementById("pfEdit");
+  if(ed) ed.onclick=()=>{ box.innerHTML=profileForm(); wireForm(sp); };
+}
+function wireForm(sp){
+  document.getElementById("pfCancel").onclick=()=>renderProfile(sp);
+  document.getElementById("pfSave").onclick=async()=>{
+    const v=id=>document.getElementById(id).value.trim();
+    const nOr=id=>v(id)===""?null:(((+v(id))%360)+360)%360;
+    const pf={bottom:v("pfBottom"),level:v("pfLevel"),tide:v("pfTide"),
+      swellFrom:nOr("pfSwF"),swellTo:nOr("pfSwT"),blockFrom:nOr("pfBlF"),blockTo:nOr("pfBlT"),note:v("pfNote")};
+    const btn=document.getElementById("pfSave"); btn.textContent="저장 중…";
+    await saveProfile(sp.name,pf);
+    pickSpot(sp);          // 점수 재계산
+  };
+}
+
+/* ---------- 입수 기록 UI ---------- */
+function calib(mine){
+  const ok=mine.filter(l=>l.model&&l.model.wave!=null&&SIZE_CM[l.size]);
+  if(ok.length<3) return ok.length?`기록 ${ok.length}건 — 3건 이상 쌓이면 경향이 나옵니다.`:"";
+  const rs=ok.map(l=>SIZE_CM[l.size]/100/(l.model.wave*1.4));
+  const avg=rs.reduce((a,b)=>a+b,0)/rs.length, spread=Math.max(...rs)-Math.min(...rs);
+  const tone=spread>0.9?"편차가 커서 아직 경향이라 부르긴 이릅니다."
+    :avg>1.15?"모델보다 실제가 크게 섭니다.":avg<0.85?"모델보다 실제가 작게 섭니다.":"모델과 체감이 대체로 맞습니다.";
+  return `기록 ${ok.length}건 · 체감/모델 = <b>${avg.toFixed(2)}배</b> — ${tone}`;
+}
+function logView(sp,cur){
+  const mine=(logCache||[]).slice().sort((a,b)=>b.at.localeCompare(a.at));
+  const cal=calib(mine);
+  return `<h3>입수 기록${hasCloud()?'<span class="synced on">공유</span>':'<span class="synced off">이 기기</span>'}
+    <button class="mini" id="lgNew">지금 기록</button></h3>
+    <div id="lgForm"></div>
+    ${cal?`<p class="calib">${cal}</p>`:""}
+    ${mine.length?`<ul class="loglist">${mine.slice(0,6).map(l=>`
+      <li><b>${l.at.slice(5,10)} ${l.at.slice(11,16)}</b> ${l.size} · ${l.clean}${l.crowd?` · ${l.crowd}`:""}
+        <small>모델 ${l.model&&l.model.wave!=null?l.model.wave.toFixed(2)+"m":"–"}</small>
+        ${l.note?`<i>${l.note}</i>`:""}</li>`).join("")}</ul>`
+      :`<p class="hint">아직 기록이 없습니다. 다녀와서 남기면 모델 값과 체감이 함께 쌓입니다.</p>`}`;
+}
+function logForm(cur){
+  const btns=(name,arr,def)=>`<div class="pick" data-name="${name}">`+
+    arr.map(o=>`<button data-v="${o}" ${o===def?'aria-pressed="true"':""}>${o}</button>`).join("")+`</div>`;
+  return `<div class="form">
+    <label>체감 크기${btns("size",SIZES)}</label>
+    <label>정돈도${btns("clean",CLEANS,"클린")}</label>
+    <label>사람${btns("crowd",["한산","보통","붐빔"])}</label>
+    <label>메모<input id="lgNote" type="text" maxlength="60" placeholder="예: 오후 온쇼어로 무너짐"></label>
+    <div class="btns"><button id="lgCancel">취소</button><button id="lgSave" class="primary">기록 저장</button></div>
+    <p class="hint">지금 모델값(파고 ${n2(cur.wave)}m·${n0(cur.period)}s·${cur.rel.label})이 함께 저장됩니다. 같은 날 30건까지.</p></div>`;
+}
+function renderLog(sp,cur){
+  const box=document.getElementById("logBox"); box.innerHTML=logView(sp,cur);
+  const nb=document.getElementById("lgNew");
+  if(nb) nb.onclick=()=>{
+    document.getElementById("lgForm").innerHTML=logForm(cur);
+    const picked={size:null,clean:"클린",crowd:null};
+    box.querySelectorAll(".pick").forEach(g=>g.onclick=e=>{
+      const b=e.target.closest("button");if(!b)return;
+      g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+      picked[g.dataset.name]=b.dataset.v;});
+    document.getElementById("lgCancel").onclick=()=>{document.getElementById("lgForm").innerHTML="";};
+    document.getElementById("lgSave").onclick=async()=>{
+      if(!picked.size){alert("체감 크기를 골라 주세요.");return;}
+      const btn=document.getElementById("lgSave"); btn.textContent="저장 중…";
+      const today=new Date().toISOString().slice(0,10);
+      const cnt=await dailyCount(sp.name,today);
+      if(cnt>=30){ alert(`오늘 ${sp.name} 기록이 이미 30건입니다. 더 저장할 수 없습니다.`); btn.textContent="기록 저장"; return; }
+      const entry={id:"l"+Date.now().toString(36),spot:sp.name,date:today,
+        at:new Date().toISOString().slice(0,16),size:picked.size,clean:picked.clean,crowd:picked.crowd,
+        note:document.getElementById("lgNote").value.trim(),
+        model:{wave:cur.wave??null,period:cur.period??null,swellD:cur.swellD??null,
+          wind:cur.wind??null,windDir:cur.windDir??null,rel:cur.rel.label,tide:cur.tide??null,score:cur.s??null}};
+      const res=await addLog(entry);
+      if(!res.ok&&res.cap){ alert("서버 기준 오늘 30건에 도달해 저장되지 않았습니다."); btn.textContent="기록 저장"; return; }
+      logCache=await loadLogs(sp.name);
+      renderLog(sp,cur);
+    };
+  };
+}
+
+/* ================= 그래프 ================= */
+function graph(rows,best,tides,sun){
+  if(!rows.length) return `<p class="hint">이 날짜의 자료가 없습니다.</p>`;
+  const W=760,H=300,L=36,R=36,T=14,B=76,iw=W-L-R,ih=H-T-B;
+  const maxH=Math.max(1.2,...rows.map(r=>r.wave||0))*1.25;
+  const x=i=>L+iw*(rows.length===1?0.5:i/(rows.length-1));
+  const y=v=>T+ih-(Math.max(0,v||0)/maxH)*ih;
+  let g="";
+  if(sun){const rh=+sun.rise.slice(0,2)+ +sun.rise.slice(3)/60,sh=+sun.set.slice(0,2)+ +sun.set.slice(3)/60;
+    const xr=x(rh),xs=x(sh);
+    g+=`<rect class="night" x="${L}" y="${T}" width="${(xr-L).toFixed(1)}" height="${ih}"/><rect class="night" x="${xs.toFixed(1)}" y="${T}" width="${(W-R-xs).toFixed(1)}" height="${ih}"/>`;}
+  for(let k=0;k<=3;k++){const v=maxH*k/3,yy=y(v);
+    g+=`<line class="gridline" x1="${L}" y1="${yy.toFixed(1)}" x2="${W-R}" y2="${yy.toFixed(1)}"/><text class="gridtext" x="${L-6}" y="${(yy+3).toFixed(1)}" text-anchor="end">${v.toFixed(1)}m</text>`;}
+  if(best){const bi=rows.findIndex(r=>r.t===best.t),bw=rows.length>1?iw/(rows.length-1)/2:14;
+    g+=`<rect class="bestband" x="${(x(bi)-bw).toFixed(1)}" y="${T}" width="${(bw*2).toFixed(1)}" height="${ih}" rx="3"/>`;}
+  const tv=rows.map(r=>r.tide).filter(v=>v!=null);
+  if(tv.length>3){const tmin=Math.min(...tv),tmax=Math.max(...tv),rg=(tmax-tmin)||1;
+    const ty=v=>T+ih-((v-tmin)/rg)*(ih*0.9)-ih*0.05;
+    g+=`<path class="tideline" d="M`+rows.filter(r=>r.tide!=null).map(r=>`${x(rows.indexOf(r)).toFixed(1)},${ty(r.tide).toFixed(1)}`).join("L")+`"/>
+      <text class="gridtext" x="${W-R+4}" y="${(ty(tmax)+3).toFixed(1)}">만조</text><text class="gridtext" x="${W-R+4}" y="${(ty(tmin)+3).toFixed(1)}">간조</text>`;
+    tides.forEach(t=>{const cx=x(t.hour);
+      g+=`<line class="gridline" x1="${cx.toFixed(1)}" y1="${T}" x2="${cx.toFixed(1)}" y2="${T+ih}" opacity=".5"/><text class="tidemark" x="${cx.toFixed(1)}" y="${T-3}" text-anchor="middle">${t.label} ${fmtH(t.hour)}</text>`;});}
+  const pts=rows.map((r,i)=>`${x(i).toFixed(1)},${y(r.wave).toFixed(1)}`).join("L");
+  g+=`<path class="wavearea" d="M${x(0).toFixed(1)},${T+ih}L${pts}L${x(rows.length-1).toFixed(1)},${T+ih}Z"/><path class="waveline" d="M${pts}"/>`;
+  rows.forEach((r,i)=>{if(i%3!==0)return;const cx=x(i);
+    g+=`<text class="hourtext" x="${cx.toFixed(1)}" y="${H-B+24}" text-anchor="middle">${String(r.hour).padStart(2,"0")}</text>`;
+    if(r.windDir!=null){const a=(r.windDir+180)*Math.PI/180,cy=H-B+44,len=8,dx=Math.sin(a)*len,dy=-Math.cos(a)*len;
+      g+=`<g class="windarrow ${r.rel.cls==="off"?"off":""}" transform="translate(${cx.toFixed(1)},${cy})">
+        <line x1="${(-dx).toFixed(1)}" y1="${(-dy).toFixed(1)}" x2="${dx.toFixed(1)}" y2="${dy.toFixed(1)}"/>
+        <path d="M${dx.toFixed(1)},${dy.toFixed(1)} l${(-dx*.45-dy*.3).toFixed(1)},${(-dy*.45+dx*.3).toFixed(1)} M${dx.toFixed(1)},${dy.toFixed(1)} l${(-dx*.45+dy*.3).toFixed(1)},${(-dy*.45-dx*.3).toFixed(1)}"/></g>
+        <text class="hourtext" x="${cx.toFixed(1)}" y="${H-B+64}" text-anchor="middle">${n0(r.wind)}</text>`;}});
+  g+=`<text class="gridtext" x="${L}" y="${H-2}">시각 · 바람 방향과 풍속(m/s), 시안=오프쇼어 · 점선=조위</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시간별 파고·조위·바람">${g}</svg>`;
+}
+
+/* ================= 동기화 설정 ================= */
+const dlg=document.getElementById("cfgDlg");
+document.getElementById("cfgBtn").onclick=()=>{
+  const c=cfg(); document.getElementById("cfgUrl").value=c.url||""; document.getElementById("cfgKey").value=c.key||"";
+  document.getElementById("cfgStatus").textContent=hasCloud()?"현재 동기화 켜짐":"현재 이 기기에만 저장";
+  dlg.showModal();
+};
+document.getElementById("cfgClose").onclick=()=>dlg.close();
+document.getElementById("cfgTest").onclick=async()=>{
+  const url=document.getElementById("cfgUrl").value.trim(), key=document.getElementById("cfgKey").value.trim();
+  const st=document.getElementById("cfgStatus"); st.textContent="확인 중…";
+  try{
+    const r=await fetch(url.replace(/\/$/,"")+"/rest/v1/spot_profiles?limit=1",
+      {headers:{apikey:key,Authorization:"Bearer "+key}});
+    st.textContent = r.ok ? "연결 성공. 저장을 누르세요." : `실패: ${r.status} — 테이블·키를 확인하세요.`;
+  }catch(e){ st.textContent="연결 실패: "+e.message; }
+};
+document.getElementById("cfgSave").onclick=async()=>{
+  const url=document.getElementById("cfgUrl").value.trim(), key=document.getElementById("cfgKey").value.trim();
+  LS.set("surf.cfg",{url,key});
+  document.getElementById("cfgStatus").textContent="저장했습니다.";
+  await flushPending();
+  if(activeSpot) pickSpot(activeSpot); else dlg.close();
+};
+
+renderPicker();
+flushPending();
+</script>
 </body>
 </html>
