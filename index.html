@@ -169,6 +169,17 @@ table.board-tbl tr.me td:first-child{color:var(--swell);font-weight:600}
 table.board-tbl tr.dim td{color:var(--ink-dim);opacity:.6}
 table.board-tbl .good{color:var(--swell)}
 table.board-tbl .bad{color:var(--warn)}
+/* 콜드스타트 예시 프리뷰 */
+.ci-empty{font-size:13.5px;color:var(--ink);margin-bottom:10px;line-height:1.6}
+.ci-empty b{color:var(--swell)}
+.ci-sample{position:relative;border:1px dashed var(--grid);border-radius:10px;padding:12px 14px 10px;
+  opacity:.62;filter:saturate(.75)}
+.ci-sample::after{content:"";position:absolute;inset:0;border-radius:10px;
+  background:linear-gradient(180deg,transparent 55%,rgba(10,35,51,.35));pointer-events:none}
+.sample-badge{position:absolute;top:-10px;left:14px;z-index:1;background:var(--dawn);color:#04141d;
+  font-size:11px;font-weight:800;letter-spacing:.03em;padding:2px 9px;border-radius:999px;opacity:1}
+.ci-sample .ci-live{margin:2px 0 0}
+.ci-sample-cap{font-size:12px;color:var(--ink-dim);text-align:center;margin-top:8px}
 .calib{margin:10px 0 4px;padding:8px 11px;background:rgba(63,201,220,.08);border-left:2px solid var(--swell);
   border-radius:0 5px 5px 0;font-size:13px}
 .calib b{color:var(--swell)}
@@ -1009,14 +1020,10 @@ function checkinSummary(list){
   return { n:live.length, verified, good:cnt("good"), ok:cnt("ok"), bad:cnt("bad"),
     topSize:topSize?topSize[0]:null, crowded, live };
 }
-function renderCheckin(sp,cur){
-  const box=document.getElementById("checkinBox");
-  const sum=checkinSummary(checkinCache||[]);
-  let body;
-  if(sum){
-    const verdict = sum.good>sum.bad ? "지금 탈 만하다는 쪽" : sum.bad>sum.good ? "지금 별로라는 쪽" : "의견이 갈림";
-    const vcls = sum.good>sum.bad ? "good" : sum.bad>sum.good ? "bad" : "mid";
-    body=`<div class="ci-live">
+function checkinCardBody(sum){
+  const verdict = sum.good>sum.bad ? "지금 탈 만하다는 쪽" : sum.bad>sum.good ? "지금 별로라는 쪽" : "의견이 갈림";
+  const vcls = sum.good>sum.bad ? "good" : sum.bad>sum.good ? "bad" : "mid";
+  return `<div class="ci-live">
       <div class="ci-head"><b>현장 ${sum.n}명</b>${sum.verified?`<span class="tag good">인증 ${sum.verified}</span>`:""}
         <span class="tag ${vcls}">${verdict}</span></div>
       <div class="ci-bars">
@@ -1024,15 +1031,35 @@ function renderCheckin(sp,cur){
         ${ciBar("보통",sum.ok,sum.n,"mid")}
         ${ciBar("별로",sum.bad,sum.n,"bad")}
       </div>
-      <p class="ci-meta">${sum.topSize?`대체로 <b>${sum.topSize}</b>`:""}${sum.crowded?` · 붐빔 ${sum.crowded}명`:""} · 최근 ${agoText(sum.live[0].created_at)}</p>
+      <p class="ci-meta">${sum.topSize?`대체로 <b>${sum.topSize}</b>`:""}${sum.crowded?` · 붐빔 ${sum.crowded}명`:""}${sum.metaTail||` · 최근 ${agoText(sum.live[0].created_at)}`}</p>
       <ul class="ci-list">${sum.live.slice(0,5).map(c=>`<li>
         <span class="tag ${c.rideable||'mid'}">${RIDE[c.rideable]||"–"}</span>
         ${c.size_label}${c.cond_label?` · ${c.cond_label}`:""}${c.crowd?` · ${c.crowd}`:""}
         ${c.verified?'<span class="ci-v">📍현장</span>':'<span class="ci-nv">위치 미인증</span>'}
-        ${c.note?`<i>${c.note}</i>`:""}<small>${agoText(c.created_at)}</small></li>`).join("")}</ul>
+        ${c.note?`<i>${c.note}</i>`:""}<small>${c.agoLabel||agoText(c.created_at)}</small></li>`).join("")}</ul>
     </div>`;
+}
+// 체크인이 0건일 때 보여줄 예시(샘플). 실제 데이터가 아님을 분명히 표시한다.
+const SAMPLE_CHECKIN={ n:5, verified:3, good:3, ok:1, bad:1, topSize:"허리", crowded:1,
+  metaTail:" · 예시로 보여주는 화면입니다",
+  live:[
+    {rideable:"good",size_label:"허리",cond_label:"클린",crowd:"보통",verified:true, note:"셋업 남쪽이 제일 깔끔", agoLabel:"12분 전"},
+    {rideable:"good",size_label:"가슴",cond_label:"클린",crowd:"보통",verified:true, agoLabel:"25분 전"},
+    {rideable:"ok",  size_label:"무릎",cond_label:"초피",crowd:"한산",verified:false,note:"바람 조금씩 들어오는 중", agoLabel:"40분 전"},
+    {rideable:"good",size_label:"허리",cond_label:"클린",crowd:"붐빔",verified:true, agoLabel:"55분 전"},
+    {rideable:"bad", size_label:"장판",cond_label:"정크",crowd:"한산",verified:false,agoLabel:"1시간 20분 전"},
+  ]};
+function renderCheckin(sp,cur){
+  const box=document.getElementById("checkinBox");
+  const sum=checkinSummary(checkinCache||[]);
+  let body, sampleNote="";
+  if(sum){
+    body=checkinCardBody(sum);
   } else {
-    body=`<p class="hint">지금 이 해변에 올라온 체크인이 없습니다. 현장이라면 첫 번째로 남겨보세요. (2시간 유효)</p>`;
+    // 예시 프리뷰: 실제와 같은 레이아웃을 흐리게, "예시" 배지와 함께
+    body=`<p class="ci-empty">아직 이 해변에 올라온 체크인이 없어요. 현장이라면 <b>첫 번째로 남겨보세요.</b> (2시간 유효)</p>
+      <div class="ci-sample"><span class="sample-badge">예시</span>${checkinCardBody(SAMPLE_CHECKIN)}</div>
+      <p class="ci-sample-cap">체크인이 쌓이면 위처럼 보입니다.</p>`;
   }
   box.innerHTML=`<h3>실시간 체크인${hasCloud()?'':'<span class="synced off">이 기기</span>'}
     <button class="mini" id="ciNew">체크인</button></h3>
@@ -1104,8 +1131,27 @@ async function renderBoard(sp){
   }).sort((a,b)=> (b.live?b.net:-99) - (a.live?a.net:-99) || b.live-a.live);
   const any=rows.some(r=>r.live>0);
   if(!any){
-    box.innerHTML=`<h3>${sp.region} 지금 어디가 좋나</h3>
-      <p class="hint">아직 이 지역에 살아있는 체크인이 없습니다. 현장에서 체크인이 쌓이면 해변별로 비교해 보여줍니다.</p>`;
+    // 예시 표: 이 지역 실제 해변 이름으로, 그럴듯한 샘플 수치를 흐리게
+    const sample=peers.slice(0,4);
+    const demo=[
+      {live:6,good:4,bad:1,ver:4,crowd:1},
+      {live:3,good:2,bad:0,ver:2,crowd:0},
+      {live:2,good:0,bad:2,ver:1,crowd:0},
+      {live:1,good:0,bad:1,ver:0,crowd:1},
+    ];
+    const demoRows=sample.map((s,i)=>({s,...(demo[i]||demo[3])}));
+    box.innerHTML=`<h3>${sp.region} 지금 어디가 좋나 <span class="hint" style="margin-left:6px;font-weight:400">현장 체크인 기준</span></h3>
+      <p class="ci-empty">아직 이 지역에 올라온 체크인이 없어요. 몇 명만 남겨도 <b>어디가 좋은지 바로 비교</b>됩니다.</p>
+      <div class="ci-sample"><span class="sample-badge">예시</span>
+      <table class="board-tbl"><thead><tr><th>해변</th><th>현장</th><th>탈만/별로</th><th>혼잡</th></tr></thead><tbody>
+      ${demoRows.map((r,i)=>`<tr class="${i===0?'me':''}">
+        <td>${r.s.name}${i===0?' <small>추천</small>':''}</td>
+        <td>${r.live} <span class="ci-v">📍${r.ver}</span></td>
+        <td><b class="good">${r.good}</b> / <b class="bad">${r.bad}</b></td>
+        <td>${r.crowd?`<span class="bad">${r.crowd}</span>`:'여유'}</td>
+      </tr>`).join("")}
+      </tbody></table></div>
+      <p class="ci-sample-cap">체크인이 쌓이면 위처럼 해변끼리 비교됩니다. 📍는 현장 인증 수.</p>`;
     return;
   }
   box.innerHTML=`<h3>${sp.region} 지금 어디가 좋나 <span class="hint" style="margin-left:6px;font-weight:400">현장 체크인 기준</span></h3>
