@@ -470,9 +470,7 @@ async function sb(path, opts){
 
 /* 로컬 캐시 (오프라인·미설정 시 단독 동작) */
 const localProfiles = () => LS.get("surf.profiles", {});
-const localLogs     = () => LS.get("surf.logs", []);
-const pendingLogs   = () => LS.get("surf.pending", []);   // 클라우드 전송 대기 큐
-let profileCache = null, logCache = null, checkinCache = null;
+let profileCache = null, checkinCache = null;
 
 async function loadProfile(spot){
   const local = localProfiles()[spot] || null;
@@ -500,60 +498,6 @@ async function saveProfile(spot, pf){
         block_from:pf.blockFrom, block_to:pf.blockTo, note:pf.note||null, updated_at:new Date().toISOString() }) });
     return { ok:true, cloud:true };
   }catch(e){ return { ok:true, cloud:false, err:e.message }; }
-}
-
-async function loadLogs(spot){
-  if(!hasCloud()) return localLogs().filter(l=>l.spot===spot);
-  try{
-    const rows = await sb(`surf_logs?spot=eq.${encodeURIComponent(spot)}&order=observed_at.desc&limit=60`);
-    return (rows||[]).map(r=>({ id:"sb"+r.id, spot:r.spot, at:r.observed_at.slice(0,16),
-      date:r.surf_date, size:r.size_label, clean:r.clean, crowd:r.crowd, note:r.note,
-      model:{ wave:r.model_wave, period:r.model_period, swellD:r.model_swell_dir,
-        wind:r.model_wind, windDir:r.model_wind_dir, rel:r.model_wind_rel,
-        tide:r.model_tide, score:r.model_score }, cloud:true }));
-  }catch(e){ return localLogs().filter(l=>l.spot===spot); }
-}
-async function dailyCount(spot, date){
-  if(!hasCloud()){
-    return localLogs().filter(l=>l.spot===spot && (l.date||l.at.slice(0,10))===date).length;
-  }
-  try{
-    const rows = await sb(`surf_logs?spot=eq.${encodeURIComponent(spot)}&surf_date=eq.${date}&select=id`,
-      { headers:{ Prefer:"count=exact" } });
-    return (rows||[]).length;
-  }catch(e){
-    return localLogs().filter(l=>l.spot===spot && (l.date||l.at.slice(0,10))===date).length;
-  }
-}
-async function addLog(entry){
-  // 항상 로컬에 남긴다
-  const all = localLogs(); all.push(entry); LS.set("surf.logs", all);
-  if(!hasCloud()) return { ok:true, cloud:false };
-  const payload = { spot:entry.spot, surf_date:entry.date, observed_at:new Date().toISOString(),
-    size_label:entry.size, clean:entry.clean, crowd:entry.crowd, note:entry.note||null,
-    model_wave:entry.model.wave, model_period:entry.model.period, model_swell_dir:entry.model.swellD,
-    model_wind:entry.model.wind, model_wind_dir:entry.model.windDir, model_wind_rel:entry.model.rel,
-    model_tide:entry.model.tide, model_score:entry.model.score, client_id:clientId() };
-  try{
-    await sb("surf_logs", { method:"POST",
-      headers:{ Prefer:"return=minimal" }, body: JSON.stringify(payload) });
-    return { ok:true, cloud:true };
-  }catch(e){
-    if(/DAILY_CAP_REACHED/.test(e.message)) return { ok:false, cap:true };
-    // 네트워크 실패 → 대기 큐에 저장, 다음에 재전송
-    const q = pendingLogs(); q.push(payload); LS.set("surf.pending", q);
-    return { ok:true, cloud:false, queued:true };
-  }
-}
-async function flushPending(){
-  if(!hasCloud()) return;
-  const q = pendingLogs(); if(!q.length) return;
-  const rest = [];
-  for(const p of q){
-    try{ await sb("surf_logs", { method:"POST", headers:{ Prefer:"return=minimal" }, body:JSON.stringify(p) }); }
-    catch(e){ if(!/DAILY_CAP_REACHED/.test(e.message)) rest.push(p); }
-  }
-  LS.set("surf.pending", rest);
 }
 
 /* ---------- 체크인 (실시간 현장 실황) ---------- */
@@ -624,9 +568,6 @@ const WVARS=["wind_speed_10m","wind_direction_10m","wind_gusts_10m","temperature
 const BOTTOM=["모래","사주","리프","자갈","혼합"];
 const TIDEPREF={ "":"무관", high:"만조에 좋음", mid:"중간물에 좋음", low:"간조에 좋음" };
 const LEVELS=["초급","중급","상급"];
-const SIZES=["발목","무릎","허벅지","허리","가슴","어깨","머리","오버헤드"];
-const SIZE_CM={발목:20,무릎:40,허벅지:60,허리:85,가슴:110,어깨:130,머리:160,오버헤드:210};
-const CLEANS=["클린","보통","초피","정크"];
 const CHECK_SIZES=["장판","발목","무릎","허벅지","허리","가슴","어깨","머리","오버헤드"];
 const CONDS=["클린","초피","정크"];
 const RIDE={good:"탈만함",ok:"보통",bad:"별로"};
@@ -764,7 +705,6 @@ function drawMini(points, active){
 /* ================= 데이터 로드 ================= */
 async function pickSpot(sp){
   activeSpot=sp; dayIdx=0; renderPicker();
-  await flushPending();
   $result.innerHTML=`<div class="loading">${sp.name} 파도 정보를 불러오는 중…</div>`;
   const q=`latitude=${sp.lat}&longitude=${sp.lon}&timezone=Asia%2FSeoul&forecast_days=4`;
   try{
@@ -776,7 +716,6 @@ async function pickSpot(sp){
     daily=w.daily||null;
     data=merge(m,w,sp);
     if(!data.length||data.every(h=>h.wave==null)) throw new Error("이 지점은 파랑 모델 격자 밖입니다. 인근 해변을 골라 보세요.");
-    logCache = await loadLogs(sp.name);
     checkinCache = await liveCheckins(sp.name);
     renderResult();
   }catch(err){
@@ -874,15 +813,15 @@ function renderResult(){
   <div class="graph">${graph(all,best,tides,sun)}</div>
   ${best?`<p class="best">가장 좋은 시간대 <b>${String(best.hour).padStart(2,"0")}시</b> — 파고 ${n2(best.wave)}m·${n0(best.period)}s, ${best.win.label}, ${best.cl.label}, ${best.rel.label} ${n1(best.wind)}m/s (${n1(best.s)}점).</p>`:""}
   <div class="cols" style="margin-top:12px">
-    <div class="box" id="pfBox"></div>
-    <div class="box" id="logBox"></div>
+    <div class="box" id="pfBox" hidden></div>
   </div>
   <p class="note">Open-Meteo 전지구 파랑모델 예측치입니다. 국지 지형은 직접 입력한 조건으로만 보정됩니다.
   물때는 해면고 근사값입니다. 정확한 값은 <a href="https://www.khoa.go.kr" target="_blank" rel="noopener">국립해양조사원</a>,
   해상특보는 <a href="https://www.weather.go.kr" target="_blank" rel="noopener">기상청</a>에서 확인하세요.</p>`;
 
   $result.querySelector(".days").onclick=e=>{const b=e.target.closest("button");if(!b)return;dayIdx=+b.dataset.day;renderResult();};
-  renderProfile(sp); renderLog(sp,cur);
+  renderProfile(sp);
+  if(typeof applyAdmin==="function") applyAdmin();
   renderCheckin(sp,cur); renderBoard(sp);
 }
 
@@ -935,70 +874,6 @@ function wireForm(sp){
     const btn=document.getElementById("pfSave"); btn.textContent="저장 중…";
     await saveProfile(sp.name,pf);
     pickSpot(sp);          // 점수 재계산
-  };
-}
-
-/* ---------- 입수 기록 UI ---------- */
-function calib(mine){
-  const ok=mine.filter(l=>l.model&&l.model.wave!=null&&SIZE_CM[l.size]);
-  if(ok.length<3) return ok.length?`기록 ${ok.length}건 — 3건 이상 쌓이면 경향이 나옵니다.`:"";
-  const rs=ok.map(l=>SIZE_CM[l.size]/100/(l.model.wave*1.4));
-  const avg=rs.reduce((a,b)=>a+b,0)/rs.length, spread=Math.max(...rs)-Math.min(...rs);
-  const tone=spread>0.9?"편차가 커서 아직 경향이라 부르긴 이릅니다."
-    :avg>1.15?"모델보다 실제가 크게 섭니다.":avg<0.85?"모델보다 실제가 작게 섭니다.":"모델과 체감이 대체로 맞습니다.";
-  return `기록 ${ok.length}건 · 체감/모델 = <b>${avg.toFixed(2)}배</b> — ${tone}`;
-}
-function logView(sp,cur){
-  const mine=(logCache||[]).slice().sort((a,b)=>b.at.localeCompare(a.at));
-  const cal=calib(mine);
-  return `<h3>입수 기록${hasCloud()?'<span class="synced on">공유</span>':'<span class="synced off">이 기기</span>'}
-    <button class="mini" id="lgNew">지금 기록</button></h3>
-    <div id="lgForm"></div>
-    ${cal?`<p class="calib">${cal}</p>`:""}
-    ${mine.length?`<ul class="loglist">${mine.slice(0,6).map(l=>`
-      <li><b>${l.at.slice(5,10)} ${l.at.slice(11,16)}</b> ${l.size} · ${l.clean}${l.crowd?` · ${l.crowd}`:""}
-        <small>모델 ${l.model&&l.model.wave!=null?l.model.wave.toFixed(2)+"m":"–"}</small>
-        ${l.note?`<i>${l.note}</i>`:""}</li>`).join("")}</ul>`
-      :`<p class="hint">아직 기록이 없습니다. 다녀와서 남기면 모델 값과 체감이 함께 쌓입니다.</p>`}`;
-}
-function logForm(cur){
-  const btns=(name,arr,def)=>`<div class="pick" data-name="${name}">`+
-    arr.map(o=>`<button data-v="${o}" ${o===def?'aria-pressed="true"':""}>${o}</button>`).join("")+`</div>`;
-  return `<div class="form">
-    <label>체감 크기${btns("size",SIZES)}</label>
-    <label>정돈도${btns("clean",CLEANS,"클린")}</label>
-    <label>사람${btns("crowd",["한산","보통","붐빔"])}</label>
-    <label>메모<input id="lgNote" type="text" maxlength="60" placeholder="예: 오후 온쇼어로 무너짐"></label>
-    <div class="btns"><button id="lgCancel">취소</button><button id="lgSave" class="primary">기록 저장</button></div>
-    <p class="hint">지금 모델값(파고 ${n2(cur.wave)}m·${n0(cur.period)}s·${cur.rel.label})이 함께 저장됩니다. 같은 날 30건까지.</p></div>`;
-}
-function renderLog(sp,cur){
-  const box=document.getElementById("logBox"); box.innerHTML=logView(sp,cur);
-  const nb=document.getElementById("lgNew");
-  if(nb) nb.onclick=()=>{
-    document.getElementById("lgForm").innerHTML=logForm(cur);
-    const picked={size:null,clean:"클린",crowd:null};
-    box.querySelectorAll(".pick").forEach(g=>g.onclick=e=>{
-      const b=e.target.closest("button");if(!b)return;
-      g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-      picked[g.dataset.name]=b.dataset.v;});
-    document.getElementById("lgCancel").onclick=()=>{document.getElementById("lgForm").innerHTML="";};
-    document.getElementById("lgSave").onclick=async()=>{
-      if(!picked.size){alert("체감 크기를 골라 주세요.");return;}
-      const btn=document.getElementById("lgSave"); btn.textContent="저장 중…";
-      const today=new Date().toISOString().slice(0,10);
-      const cnt=await dailyCount(sp.name,today);
-      if(cnt>=30){ alert(`오늘 ${sp.name} 기록이 이미 30건입니다. 더 저장할 수 없습니다.`); btn.textContent="기록 저장"; return; }
-      const entry={id:"l"+Date.now().toString(36),spot:sp.name,date:today,
-        at:new Date().toISOString().slice(0,16),size:picked.size,clean:picked.clean,crowd:picked.crowd,
-        note:document.getElementById("lgNote").value.trim(),
-        model:{wave:cur.wave??null,period:cur.period??null,swellD:cur.swellD??null,
-          wind:cur.wind??null,windDir:cur.windDir??null,rel:cur.rel.label,tide:cur.tide??null,score:cur.s??null}};
-      const res=await addLog(entry);
-      if(!res.ok&&res.cap){ alert("서버 기준 오늘 30건에 도달해 저장되지 않았습니다."); btn.textContent="기록 저장"; return; }
-      logCache=await loadLogs(sp.name);
-      renderLog(sp,cur);
-    };
   };
 }
 
@@ -1222,7 +1097,6 @@ document.getElementById("cfgSave").onclick=async()=>{
   const url=document.getElementById("cfgUrl").value.trim(), key=document.getElementById("cfgKey").value.trim();
   LS.set("surf.cfg",{url,key});
   document.getElementById("cfgStatus").textContent="저장했습니다.";
-  await flushPending();
   if(activeSpot) pickSpot(activeSpot); else dlg.close();
 };
 
@@ -1236,8 +1110,28 @@ document.getElementById("introStart").onclick=()=>{
 };
 introDlg.addEventListener("cancel",()=>{ if(document.getElementById("introDont").checked) LS.set("surf.introSeen", true); });
 
+/* 관리자 진입: 헤더 로고를 길게(0.8초) 누르면 이 기기에서 지형 조건 편집이 켜진다.
+   일반 사용자에겐 보이지 않고, 켜두면 pfBox와 동기화 설정이 나타난다. */
+function applyAdmin(){
+  const on = LS.get("surf.admin", false);
+  const pf = document.getElementById("pfBox"); if(pf) pf.hidden = !on;
+  const cfg = document.getElementById("cfgBtn"); if(cfg) cfg.hidden = !on;
+}
+(function(){
+  const logo=document.querySelector("header h1"); if(!logo) return;
+  let t=null;
+  const start=()=>{ t=setTimeout(()=>{
+    const on=!LS.get("surf.admin",false); LS.set("surf.admin",on); applyAdmin();
+    alert(on?"관리자 모드 ON — 지형 조건·동기화 설정이 표시됩니다.":"관리자 모드 OFF");
+  },800); };
+  const cancel=()=>{ if(t){clearTimeout(t);t=null;} };
+  logo.addEventListener("mousedown",start); logo.addEventListener("touchstart",start,{passive:true});
+  ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>logo.addEventListener(ev,cancel));
+  logo.style.cursor="default"; logo.style.userSelect="none";
+})();
+
 renderPicker();
-flushPending();
+applyAdmin();
 if(!LS.get("surf.introSeen", false)) openIntro();
 </script>
 </body>
