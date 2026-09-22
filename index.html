@@ -133,6 +133,38 @@ dl.kv dt{color:var(--ink-dim);min-width:90px;flex:none}
 .pick button{min-height:38px;background:transparent;border:1px solid var(--grid);color:var(--ink-dim);border-radius:999px;
   padding:5px 13px;font:inherit;font-size:13px;cursor:pointer}
 .pick button[aria-pressed="true"]{background:var(--swell);border-color:var(--swell);color:#04141d;font-weight:700}
+.checkin h3,.board h3{align-items:baseline}
+.ci-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.ci-head b{font-size:15px}
+.ci-bars{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.ci-bar{display:grid;grid-template-columns:44px 1fr 24px;gap:8px;align-items:center;font-size:12px;color:var(--ink-dim)}
+.ci-bar em{font-style:normal}
+.ci-bar span{height:8px;background:var(--grid);border-radius:4px;overflow:hidden}
+.ci-bar span i{display:block;height:100%;border-radius:4px}
+.ci-bar span i.good{background:var(--swell)}
+.ci-bar span i.mid{background:var(--dawn)}
+.ci-bar span i.bad{background:var(--warn)}
+.ci-bar u{text-decoration:none;text-align:right;color:var(--ink);font-weight:600}
+.ci-meta{font-size:12px;color:var(--ink-dim);margin:2px 0 8px}
+.ci-meta b{color:var(--ink)}
+ul.ci-list{list-style:none}
+ul.ci-list li{padding:7px 0;border-top:1px solid var(--grid);font-size:12.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+ul.ci-list li i{font-style:normal;color:var(--ink-dim);font-size:12px;flex-basis:100%}
+ul.ci-list li small{color:var(--ink-dim);font-size:11px;margin-left:auto}
+.ci-v{color:var(--swell);font-size:11px}
+.ci-nv{color:var(--ink-dim);font-size:11px}
+.tag.good{background:rgba(63,201,220,.16);color:var(--swell)}
+.tag.mid{background:rgba(240,178,63,.16);color:var(--dawn)}
+.tag.bad{background:rgba(224,112,95,.16);color:var(--warn)}
+table.board-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+table.board-tbl th{text-align:left;font-size:11px;color:var(--ink-dim);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--grid)}
+table.board-tbl td{padding:7px 6px;border-bottom:1px solid var(--grid)}
+table.board-tbl td small{color:var(--ink-dim);font-size:10.5px}
+table.board-tbl tr.me{background:rgba(63,201,220,.07)}
+table.board-tbl tr.me td:first-child{color:var(--swell);font-weight:600}
+table.board-tbl tr.dim td{color:var(--ink-dim);opacity:.6}
+table.board-tbl .good{color:var(--swell)}
+table.board-tbl .bad{color:var(--warn)}
 .calib{margin:10px 0 4px;padding:8px 11px;background:rgba(63,201,220,.08);border-left:2px solid var(--swell);
   border-radius:0 5px 5px 0;font-size:13px}
 .calib b{color:var(--swell)}
@@ -221,6 +253,13 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
       <div><b>믿으면 안 되는 것</b>
         <p>모델 격자가 수십 km라 <b>이웃한 해변은 값이 거의 같습니다.</b> 만 안쪽·방파제 같은 국지 지형은
            직접 입력해야 반영되고, 물때는 근사값입니다. 입수 전 현장 상황과 기상청 특보를 꼭 확인하세요.</p></div>
+    </div>
+    <div class="introrow">
+      <span class="ico" style="color:var(--swell)">◉</span>
+      <div><b>실시간 체크인</b>
+        <p>모델이 못 잡는 이웃 해변의 차이는 <b>현장 사람들의 체크인</b>으로 메웁니다. 지금 어디에 몇 명이,
+           탈 만한지·붐비는지 투표가 쌓이고 2시간만 유효합니다. 해변 반경 안이면 '현장 인증'으로 올라가
+           더 믿을 만한 신호가 됩니다. 지역 화면에서 해변끼리 비교해 좋은 쪽으로 옮겨 타세요.</p></div>
     </div>
     <div class="btns">
       <label class="chk"><input type="checkbox" id="introDont"> 다시 보지 않기</label>
@@ -416,7 +455,7 @@ async function sb(path, opts){
 const localProfiles = () => LS.get("surf.profiles", {});
 const localLogs     = () => LS.get("surf.logs", []);
 const pendingLogs   = () => LS.get("surf.pending", []);   // 클라우드 전송 대기 큐
-let profileCache = null, logCache = null;
+let profileCache = null, logCache = null, checkinCache = null;
 
 async function loadProfile(spot){
   const local = localProfiles()[spot] || null;
@@ -500,6 +539,61 @@ async function flushPending(){
   LS.set("surf.pending", rest);
 }
 
+/* ---------- 체크인 (실시간 현장 실황) ---------- */
+// GPS 로 현재 위치를 얻어 해변 반경 내인지 판정. 실패해도 체크인은 가능(미인증).
+function getPosition(timeout){
+  return new Promise(resolve=>{
+    if(!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      p=>resolve({lat:p.coords.latitude, lon:p.coords.longitude, acc:p.coords.accuracy}),
+      ()=>resolve(null),
+      {enableHighAccuracy:true, timeout:timeout||8000, maximumAge:60000});
+  });
+}
+function distMeters(a1,o1,a2,o2){
+  const R=6371000, r=Math.PI/180;
+  const dp=(a2-a1)*r, dl=(o2-o1)*r;
+  const x=Math.sin(dp/2)**2 + Math.cos(a1*r)*Math.cos(a2*r)*Math.sin(dl/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+const CHECKIN_RADIUS = 1500;   // 이 안이면 현장 인증
+
+async function liveCheckins(spot){
+  if(!hasCloud()) return (LS.get("surf.checkins",[]))
+    .filter(c=>c.spot===spot && new Date(c.expires_at)>new Date());
+  try{
+    const rows = await sb(`surf_checkins?spot=eq.${encodeURIComponent(spot)}&expires_at=gt.${new Date().toISOString()}&order=created_at.desc&limit=50`);
+    return rows||[];
+  }catch(e){
+    return (LS.get("surf.checkins",[])).filter(c=>c.spot===spot && new Date(c.expires_at)>new Date());
+  }
+}
+// 지역 전체 해변의 라이브 집계 — 비교 보드가 읽는다
+async function liveBoard(spotNames){
+  if(!hasCloud() || !spotNames.length) return {};
+  try{
+    const inList = spotNames.map(n=>`"${n.replace(/"/g,'')}"`).join(",");
+    const rows = await sb(`surf_live_board?spot=in.(${encodeURIComponent(inList)})`);
+    const map={}; (rows||[]).forEach(r=>map[r.spot]=r); return map;
+  }catch(e){ return {}; }
+}
+async function addCheckin(entry){
+  const local = LS.get("surf.checkins",[]); local.push(entry); LS.set("surf.checkins", local);
+  if(!hasCloud()) return { ok:true, cloud:false };
+  const payload = { spot:entry.spot, size_label:entry.size, cond_label:entry.cond,
+    crowd:entry.crowd, rideable:entry.rideable, note:entry.note||null,
+    verified:entry.verified, dist_m:entry.dist_m,
+    model_wave:entry.model.wave, model_period:entry.model.period, model_score:entry.model.score,
+    client_id:clientId() };
+  try{
+    await sb("surf_checkins", { method:"POST", headers:{ Prefer:"return=minimal" }, body:JSON.stringify(payload) });
+    return { ok:true, cloud:true };
+  }catch(e){
+    if(/CHECKIN_RATE_LIMIT/.test(e.message)) return { ok:false, rate:true };
+    return { ok:true, cloud:false, queued:true };
+  }
+}
+
 /* ================= 상수 ================= */
 const MARINE="https://marine-api.open-meteo.com/v1/marine";
 const FORECAST="https://api.open-meteo.com/v1/forecast";
@@ -516,6 +610,9 @@ const LEVELS=["초급","중급","상급"];
 const SIZES=["발목","무릎","허벅지","허리","가슴","어깨","머리","오버헤드"];
 const SIZE_CM={발목:20,무릎:40,허벅지:60,허리:85,가슴:110,어깨:130,머리:160,오버헤드:210};
 const CLEANS=["클린","보통","초피","정크"];
+const CHECK_SIZES=["장판","발목","무릎","허벅지","허리","가슴","어깨","머리","오버헤드"];
+const CONDS=["클린","초피","정크"];
+const RIDE={good:"탈만함",ok:"보통",bad:"별로"};
 
 /* 프로필 반영 판정 */
 function swellWindowP(from,facing,pf){
@@ -623,6 +720,7 @@ async function pickSpot(sp){
     data=merge(m,w,sp);
     if(!data.length||data.every(h=>h.wave==null)) throw new Error("이 지점은 파랑 모델 격자 밖입니다. 인근 해변을 골라 보세요.");
     logCache = await loadLogs(sp.name);
+    checkinCache = await liveCheckins(sp.name);
     renderResult();
   }catch(err){
     $result.innerHTML=`<div class="err"><b>데이터를 불러오지 못했습니다</b>${err.message}<br><br>
@@ -716,6 +814,8 @@ function renderResult(){
     return `<button data-day="${i}" aria-pressed="${i===dayIdx}">${lbl} (${"일월화수목금토"[dt.getDay()]})</button>`;}).join("")}</div>
   <div class="graph">${graph(all,best,tides,sun)}</div>
   ${best?`<p class="best">가장 좋은 시간대 <b>${String(best.hour).padStart(2,"0")}시</b> — 파고 ${n2(best.wave)}m·${n0(best.period)}s, ${best.win.label}, ${best.cl.label}, ${best.rel.label} ${n1(best.wind)}m/s (${n1(best.s)}점).</p>`:""}
+  <div class="box checkin" id="checkinBox" style="margin-top:12px"></div>
+  <div class="box board" id="boardBox" style="margin-top:12px"></div>
   <div class="cols" style="margin-top:12px">
     <div class="box" id="pfBox"></div>
     <div class="box" id="logBox"></div>
@@ -726,6 +826,7 @@ function renderResult(){
 
   $result.querySelector(".days").onclick=e=>{const b=e.target.closest("button");if(!b)return;dayIdx=+b.dataset.day;renderResult();};
   renderProfile(sp); renderLog(sp,cur);
+  renderCheckin(sp,cur); renderBoard(sp);
 }
 
 /* ---------- 프로필 UI ---------- */
@@ -842,6 +943,135 @@ function renderLog(sp,cur){
       renderLog(sp,cur);
     };
   };
+}
+
+/* ---------- 체크인 UI ---------- */
+function agoText(iso){
+  const m=Math.round((Date.now()-new Date(iso))/60000);
+  if(m<1) return "방금"; if(m<60) return m+"분 전";
+  return Math.floor(m/60)+"시간 "+(m%60)+"분 전";
+}
+function checkinSummary(list){
+  const live=list.filter(c=>new Date(c.expires_at)>new Date());
+  if(!live.length) return null;
+  const cnt=k=>live.filter(c=>c.rideable===k).length;
+  const verified=live.filter(c=>c.verified).length;
+  // 대표 크기: 최빈값
+  const sizeCount={}; live.forEach(c=>{if(c.size_label)sizeCount[c.size_label]=(sizeCount[c.size_label]||0)+1;});
+  const topSize=Object.entries(sizeCount).sort((a,b)=>b[1]-a[1])[0];
+  const crowded=live.filter(c=>c.crowd==="붐빔").length;
+  return { n:live.length, verified, good:cnt("good"), ok:cnt("ok"), bad:cnt("bad"),
+    topSize:topSize?topSize[0]:null, crowded, live };
+}
+function renderCheckin(sp,cur){
+  const box=document.getElementById("checkinBox");
+  const sum=checkinSummary(checkinCache||[]);
+  let body;
+  if(sum){
+    const verdict = sum.good>sum.bad ? "지금 탈 만하다는 쪽" : sum.bad>sum.good ? "지금 별로라는 쪽" : "의견이 갈림";
+    const vcls = sum.good>sum.bad ? "good" : sum.bad>sum.good ? "bad" : "mid";
+    body=`<div class="ci-live">
+      <div class="ci-head"><b>현장 ${sum.n}명</b>${sum.verified?`<span class="tag good">인증 ${sum.verified}</span>`:""}
+        <span class="tag ${vcls}">${verdict}</span></div>
+      <div class="ci-bars">
+        ${ciBar("탈만함",sum.good,sum.n,"good")}
+        ${ciBar("보통",sum.ok,sum.n,"mid")}
+        ${ciBar("별로",sum.bad,sum.n,"bad")}
+      </div>
+      <p class="ci-meta">${sum.topSize?`대체로 <b>${sum.topSize}</b>`:""}${sum.crowded?` · 붐빔 ${sum.crowded}명`:""} · 최근 ${agoText(sum.live[0].created_at)}</p>
+      <ul class="ci-list">${sum.live.slice(0,5).map(c=>`<li>
+        <span class="tag ${c.rideable||'mid'}">${RIDE[c.rideable]||"–"}</span>
+        ${c.size_label}${c.cond_label?` · ${c.cond_label}`:""}${c.crowd?` · ${c.crowd}`:""}
+        ${c.verified?'<span class="ci-v">📍현장</span>':'<span class="ci-nv">위치 미인증</span>'}
+        ${c.note?`<i>${c.note}</i>`:""}<small>${agoText(c.created_at)}</small></li>`).join("")}</ul>
+    </div>`;
+  } else {
+    body=`<p class="hint">지금 이 해변에 올라온 체크인이 없습니다. 현장이라면 첫 번째로 남겨보세요. (2시간 유효)</p>`;
+  }
+  box.innerHTML=`<h3>실시간 체크인${hasCloud()?'':'<span class="synced off">이 기기</span>'}
+    <button class="mini" id="ciNew">체크인</button></h3>
+    <div id="ciForm"></div>${body}`;
+  const nb=document.getElementById("ciNew");
+  if(nb) nb.onclick=()=>openCheckinForm(sp,cur);
+}
+function ciBar(label,n,total,cls){
+  const pct=total?Math.round(n/total*100):0;
+  return `<div class="ci-bar"><em>${label}</em><span><i class="${cls}" style="width:${pct}%"></i></span><u>${n}</u></div>`;
+}
+function openCheckinForm(sp,cur){
+  const btns=(name,arr,def)=>`<div class="pick" data-name="${name}">`+
+    arr.map(o=>`<button data-v="${o}" ${o===def?'aria-pressed="true"':""}>${o}</button>`).join("")+`</div>`;
+  const rideBtns=`<div class="pick" data-name="rideable">`+
+    Object.entries(RIDE).map(([k,v])=>`<button data-v="${k}">${v}</button>`).join("")+`</div>`;
+  document.getElementById("ciForm").innerHTML=`<div class="form">
+    <label>지금 탈 만한가${rideBtns}</label>
+    <label>크기${btns("size",CHECK_SIZES)}</label>
+    <label>상태${btns("cond",CONDS)}</label>
+    <label>사람${btns("crowd",["한산","보통","붐빔"])}</label>
+    <label>한줄<input id="ciNote" type="text" maxlength="50" placeholder="예: 셋업 남쪽이 깔끔, 바람 곧 들어올 듯"></label>
+    <p class="hint" id="ciGeo">위치를 확인하면 '현장 인증'으로 올라갑니다.</p>
+    <div class="btns"><button id="ciCancel">취소</button><button id="ciSave" class="primary">체크인 올리기</button></div>
+  </div>`;
+  const picked={rideable:null,size:null,cond:null,crowd:null};
+  document.querySelectorAll("#ciForm .pick").forEach(g=>g.onclick=e=>{
+    const b=e.target.closest("button");if(!b)return;
+    g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    picked[g.dataset.name]=b.dataset.v;});
+  document.getElementById("ciCancel").onclick=()=>{document.getElementById("ciForm").innerHTML="";};
+  document.getElementById("ciSave").onclick=async()=>{
+    if(!picked.rideable){alert("'지금 탈 만한가'를 골라 주세요.");return;}
+    if(!picked.size){alert("크기를 골라 주세요.");return;}
+    const btn=document.getElementById("ciSave"); btn.textContent="위치 확인 중…";
+    const geo=document.getElementById("ciGeo");
+    const pos=await getPosition();
+    let verified=false, dist=null;
+    if(pos){ dist=Math.round(distMeters(pos.lat,pos.lon,sp.lat,sp.lon)); verified=dist<=CHECKIN_RADIUS;
+      geo.textContent = verified ? `현장 확인됨 (약 ${dist}m)` : `해변에서 약 ${(dist/1000).toFixed(1)}km — 미인증으로 올라갑니다`; }
+    else geo.textContent="위치를 얻지 못했습니다 — 미인증으로 올라갑니다";
+    btn.textContent="올리는 중…";
+    const now=new Date();
+    const entry={id:"ci"+Date.now().toString(36),spot:sp.name,
+      created_at:now.toISOString(), expires_at:new Date(now.getTime()+2*3600*1000).toISOString(),
+      size:picked.size,size_label:picked.size,cond:picked.cond,cond_label:picked.cond,crowd:picked.crowd,
+      rideable:picked.rideable,note:document.getElementById("ciNote").value.trim(),
+      verified,dist_m:dist,
+      model:{wave:cur.wave??null,period:cur.period??null,score:cur.s??null}};
+    const res=await addCheckin(entry);
+    if(!res.ok&&res.rate){ alert("이 해변에는 30분에 한 번만 체크인할 수 있습니다."); btn.textContent="체크인 올리기"; return; }
+    checkinCache=await liveCheckins(sp.name);
+    renderCheckin(sp,cur); renderBoard(sp);
+  };
+}
+
+/* ---------- 지역 비교 보드 ("좋은 쪽으로 이동") ---------- */
+async function renderBoard(sp){
+  const box=document.getElementById("boardBox");
+  const peers=SPOTS.filter(s=>s.coast===sp.coast&&s.region===sp.region);
+  box.innerHTML=`<h3>${sp.region} 지금 어디가 좋나 <span class="hint" style="margin-left:6px;font-weight:400">현장 체크인 기준</span></h3>
+    <p class="hint" id="boardLoading">불러오는 중…</p>`;
+  const board = await liveBoard(peers.map(s=>s.name));
+  const rows=peers.map(s=>{
+    const b=board[s.name];
+    const live=b?+b.total:0, good=b?+b.good_n:0, bad=b?+b.bad_n:0, ver=b?+b.verified_n:0, crowd=b?+b.crowded_n:0;
+    const net=good-bad;
+    return {s,live,good,bad,ver,crowd,net,last:b?b.last_at:null};
+  }).sort((a,b)=> (b.live?b.net:-99) - (a.live?a.net:-99) || b.live-a.live);
+  const any=rows.some(r=>r.live>0);
+  if(!any){
+    box.innerHTML=`<h3>${sp.region} 지금 어디가 좋나</h3>
+      <p class="hint">아직 이 지역에 살아있는 체크인이 없습니다. 현장에서 체크인이 쌓이면 해변별로 비교해 보여줍니다.</p>`;
+    return;
+  }
+  box.innerHTML=`<h3>${sp.region} 지금 어디가 좋나 <span class="hint" style="margin-left:6px;font-weight:400">현장 체크인 기준</span></h3>
+    <table class="board-tbl"><thead><tr><th>해변</th><th>현장</th><th>탈만/별로</th><th>혼잡</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr class="${r.s.name===sp.name?'me':''} ${r.live?'':'dim'}">
+      <td>${r.s.name}${r.s.name===sp.name?' <small>현재</small>':''}</td>
+      <td>${r.live?`${r.live}${r.ver?` <span class="ci-v">📍${r.ver}</span>`:''}`:'–'}</td>
+      <td>${r.live?`<b class="good">${r.good}</b> / <b class="bad">${r.bad}</b>`:'–'}</td>
+      <td>${r.crowd?`<span class="bad">${r.crowd}</span>`:r.live?'여유':'–'}</td>
+    </tr>`).join("")}
+    </tbody></table>
+    <p class="hint" style="margin-top:8px">📍는 해변 반경 안에서 인증된 체크인 수입니다. 인증 수가 많은 곳이 더 믿을 만합니다.</p>`;
 }
 
 /* ================= 그래프 ================= */
