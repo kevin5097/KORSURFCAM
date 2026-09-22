@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#04141d">
-<title>파도 읽기 — 국내 해변 서핑 예보</title>
+<title>WAVEDECK — 실시간 서핑 체크인</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
@@ -25,7 +25,7 @@ body{background:var(--deep);color:var(--ink);
 @media(min-width:761px){.wrap{max-width:1100px}}
 
 header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-h1{font-size:21px;font-weight:700;letter-spacing:-.02em}
+h1{font-size:22px;font-weight:800;letter-spacing:.04em}
 header p{color:var(--ink-dim);font-size:12.5px}
 
 /* ---------- 선택 흐름 ---------- */
@@ -50,12 +50,16 @@ header p{color:var(--ink-dim);font-size:12.5px}
 .grid button[aria-pressed="true"] small{color:#04384a}
 
 /* ---------- 미니 지도 (위치 확인용) ---------- */
-.minimap{border-top:1px solid var(--grid);padding:10px 14px;display:flex;gap:12px;align-items:center}
-.minimap svg{width:96px;height:auto;flex:none}
-.minimap .cap{font-size:11.5px;color:var(--ink-dim)}
+.minimap{border-top:1px solid var(--grid);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.minimap svg{width:100%;max-width:280px;height:auto;align-self:center;background:var(--deep);border-radius:8px}
+.minimap .cap{font-size:11.5px;color:var(--ink-dim);text-align:center}
 .land{fill:#0b2c3e;stroke:var(--line);stroke-width:1.1;stroke-linejoin:round}
-.dot{fill:var(--dawn);stroke:var(--deep);stroke-width:1.2}
+.dot{fill:var(--dawn);stroke:var(--deep);stroke-width:0.4}
 .dot.on{fill:#fff}
+.dot-lbl{fill:var(--ink-dim);font-family:inherit;dominant-baseline:middle}
+.dot-lbl.on{fill:#fff;font-weight:700}
+.lead{stroke:var(--grid)}
+.lead.on{stroke:var(--swell)}
 
 /* ---------- 결과 ---------- */
 .empty{border:1px dashed var(--grid);border-radius:var(--r);padding:44px 20px;text-align:center;color:var(--ink-dim)}
@@ -193,9 +197,11 @@ ul.loglist li i{display:block;color:var(--ink-dim);font-style:normal;font-size:1
 .introrow b{font-size:14px;display:block;margin-bottom:3px}
 .introrow p{font-size:12.5px;color:var(--ink-dim);margin:0;line-height:1.65}
 .introrow p b{display:inline;color:var(--ink);font-size:12.5px}
-.sheet.intro .btns{align-items:center;margin-top:4px}
-.chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-dim);cursor:pointer;flex:1}
-.chk input{width:17px;height:17px;min-height:0;flex:none;margin:0;accent-color:var(--swell)}
+.sheet.intro .btns{align-items:center;gap:12px;margin-top:8px}
+.chk{display:flex;align-items:center;font-size:13px;color:var(--ink-dim);cursor:pointer;flex:1;min-height:var(--tap);user-select:none}
+.chk input{width:18px;height:18px;flex:none;align-self:center;margin:0 8px 0 0;accent-color:var(--swell);cursor:pointer}
+.chk span{line-height:1;align-self:center}
+.sheet.intro .btns button{flex:none;min-width:120px}
 dialog{background:var(--hull);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:0;
   max-width:460px;width:92vw}
 dialog::backdrop{background:rgba(2,10,15,.72)}
@@ -203,7 +209,7 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
 .sheet h2{font-size:16px;margin-bottom:4px}
 .sheet p{font-size:12.5px;color:var(--ink-dim);margin-bottom:14px}
 .sheet label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:12px}
-.sheet input{width:100%;min-height:var(--tap);background:var(--panel);border:1px solid var(--grid);color:var(--ink);
+.sheet input[type=url],.sheet input[type=text]{width:100%;min-height:var(--tap);background:var(--panel);border:1px solid var(--grid);color:var(--ink);
   border-radius:8px;padding:8px 11px;font:inherit;font-size:14px;margin-top:4px}
 .sheet .btns{display:flex;gap:8px;margin-top:6px}
 .sheet button{min-height:var(--tap);flex:1;border-radius:8px;font:inherit;font-size:14px;cursor:pointer;
@@ -216,10 +222,10 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
 <body>
 <div class="wrap">
 <header>
-  <h1>파도 읽기</h1>
+  <h1>WAVEDECK</h1>
   <p>해변을 고르면 파도·바람·물때를 시간대별로</p>
   <button class="helpbtn" id="helpBtn" aria-label="이 앱 설명">?</button>
-  <button class="cfgbtn" id="cfgBtn">동기화 설정</button>
+  <button class="cfgbtn" id="cfgBtn" hidden>동기화 설정</button>
 </header>
 
 <section class="picker">
@@ -235,7 +241,7 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
 
 <dialog id="introDlg">
   <div class="sheet intro">
-    <h2>파도 읽기 — 시작하기 전에</h2>
+    <h2>WAVEDECK — 시작하기 전에</h2>
     <div class="introrow">
       <span class="ico" style="color:var(--swell)">◔</span>
       <div><b>어떤 데이터를 보나요</b>
@@ -262,7 +268,7 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
            더 믿을 만한 신호가 됩니다. 지역 화면에서 해변끼리 비교해 좋은 쪽으로 옮겨 타세요.</p></div>
     </div>
     <div class="btns">
-      <label class="chk"><input type="checkbox" id="introDont"> 다시 보지 않기</label>
+      <label class="chk"><input type="checkbox" id="introDont"><span>다시 보지 않기</span></label>
       <button id="introStart" class="primary">시작하기</button>
     </div>
   </div>
@@ -673,12 +679,12 @@ function renderPicker(){
     const rs=regionsOf(selCoast);
     $step.innerHTML=`<h2>${selCoast} · 지역 선택</h2><div class="grid region">`+
       rs.map(r=>`<button data-region="${r.region}">${r.region}<small>${r.spots.length}곳</small></button>`).join("")+`</div>`;
-    drawMini(rs.map(r=>({lat:r.lat,lon:r.lon})), null);
+    drawMini(rs.map(r=>({lat:r.lat,lon:r.lon,label:r.region})), null);
   } else {
     const spots=SPOTS.filter(s=>s.coast===selCoast&&s.region===selRegion);
     $step.innerHTML=`<h2>${selRegion} · 해변 선택</h2><div class="grid spot">`+
       spots.map(s=>`<button data-spot="${s.name}" aria-pressed="${activeSpot&&activeSpot.name===s.name}">${s.name}</button>`).join("")+`</div>`;
-    drawMini(spots, activeSpot);
+    drawMini(spots.map(s=>({lat:s.lat,lon:s.lon,name:s.name,label:s.name})), activeSpot);
   }
 }
 $step.onclick=e=>{
@@ -692,15 +698,55 @@ $step.onclick=e=>{
 function drawMini(points, active){
   if(!points||!points.length){$mini.hidden=true;return;}
   $mini.hidden=false;
+  const zoomed = !!selRegion;
   const path="M"+COAST.map(([lo,la])=>`${px(lo).toFixed(1)},${py(la).toFixed(1)}`).join("L")+"Z";
-  let dots=points.map(p=>{
+
+  const xs=points.map(p=>px(p.lon)), ys=points.map(p=>py(p.lat));
+  let minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const spanX=maxX-minX, spanY=maxY-minY;
+  const minSpan = zoomed ? 45 : 120;
+  // 해변 단계는 라벨을 오른쪽에 세로로 세우므로 오른쪽 여백을 크게
+  const padL = Math.max(spanX*0.4, minSpan);
+  const padR = zoomed ? Math.max(spanX*0.4, minSpan)+140 : Math.max(spanX*0.6, minSpan);
+  const padY = Math.max(spanY*0.35, minSpan*0.6);
+  let vx=minX-padL, vy=minY-padY, vw=spanX+padL+padR, vh=spanY+padY*2;
+  const targetRatio = 620/380;
+  if(vh/vw < targetRatio){ const need=vw*targetRatio; vy-=(need-vh)/2; vh=need; }
+  else { const need=vh/targetRatio; vx-=(need-vw)/2; vw=need; }
+
+  const scale = 380/vw;
+  const r  = zoomed ? 3/scale : Math.max(1.4, 2.2/scale);
+  const rOn= 4.5/scale;
+  const sw = Math.max(0.5, 1.1/scale);
+  const fs = (zoomed?9.5:9)/scale;
+
+  const dots=points.map(p=>{
     const on=active&&Math.abs(p.lat-active.lat)<1e-4&&Math.abs(p.lon-active.lon)<1e-4;
-    return `<circle class="dot${on?" on":""}" cx="${px(p.lon).toFixed(1)}" cy="${py(p.lat).toFixed(1)}" r="${on?4:2.6}"/>`;
+    return `<circle class="dot${on?" on":""}" cx="${px(p.lon).toFixed(1)}" cy="${py(p.lat).toFixed(1)}" r="${(on?rOn:r).toFixed(1)}"/>`;
   }).join("");
-  const cap = active ? `${active.name} 위치` : `${selCoast} 지역들`;
-  $mini.innerHTML=`<svg viewBox="0 0 380 640" role="img" aria-label="위치 지도">
-    <path class="land" d="${path}"/>
-    <ellipse class="land" cx="${px(126.55)}" cy="${py(33.38)}" rx="${0.44*KX*K}" ry="${0.17*K}"/>${dots}</svg>
+
+  let labels="";
+  if(zoomed){
+    // 해변 라벨을 위→아래 위경도 순으로 세로 균등 배치하고 리더선으로 점과 연결(겹침 방지)
+    const order=points.map((p,i)=>({p,i,py:ys[i]})).sort((a,b)=>a.py-b.py);
+    const labelX = maxX + 24/scale;             // 라벨 세로줄 x 위치
+    const top=vy+padY*0.4, bottom=vy+vh-padY*0.4;
+    const step=(bottom-top)/Math.max(1,order.length-1);
+    labels=order.map((o,k)=>{
+      const p=o.p, on=active&&Math.abs(p.lat-active.lat)<1e-4&&Math.abs(p.lon-active.lon)<1e-4;
+      const ly = order.length===1 ? (top+bottom)/2 : top+step*k;
+      const dx=px(p.lon), dy=py(p.lat);
+      return `<line class="lead${on?" on":""}" x1="${dx.toFixed(1)}" y1="${dy.toFixed(1)}" x2="${(labelX-2/scale).toFixed(1)}" y2="${ly.toFixed(1)}" stroke-width="${(0.6/scale).toFixed(2)}"/>
+      <text class="dot-lbl${on?" on":""}" x="${labelX.toFixed(1)}" y="${ly.toFixed(1)}" font-size="${fs.toFixed(1)}">${p.label}</text>`;
+    }).join("");
+  } else if(points.length<=10){
+    labels=points.map(p=>p.label?`<text class="dot-lbl" x="${(px(p.lon)+r+3/scale).toFixed(1)}" y="${(py(p.lat)+r*0.7).toFixed(1)}" font-size="${fs.toFixed(1)}">${p.label}</text>`:"").join("");
+  }
+
+  const cap = active ? `${active.name}` : zoomed ? `${selRegion} 해변` : `${selCoast} 지역`;
+  $mini.innerHTML=`<svg viewBox="${vx.toFixed(1)} ${vy.toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}" role="img" aria-label="위치 지도">
+    <path class="land" style="stroke-width:${sw.toFixed(2)}" d="${path}"/>
+    <ellipse class="land" style="stroke-width:${sw.toFixed(2)}" cx="${px(126.55)}" cy="${py(33.38)}" rx="${0.44*KX*K}" ry="${0.17*K}"/>${labels}${dots}</svg>
     <span class="cap">${cap}</span>`;
 }
 
@@ -801,7 +847,9 @@ function renderResult(){
       <div><dt>하늘</dt><dd style="font-size:14px">${WMO[cur.code]||"–"}<small>${cur.rain?` ${n1(cur.rain)}mm`:""}</small></dd></div>
     </dl>
   </div>
-  <div class="cols">
+  <div class="box checkin" id="checkinBox"></div>
+  <div class="box board" id="boardBox" style="margin-top:12px"></div>
+  <div class="cols" style="margin-top:12px">
     <div class="box"><h3>물때 (해면고 근사)</h3>
       <div class="tide">${tides.length?tides.map(t=>`<div><em>${t.label}</em>${fmtH(t.hour)} <small style="color:var(--ink-dim)">${n2(t.level)}m</small></div>`).join(""):`<p class="hint">조위 극값 없음</p>`}</div>
       ${pf&&pf.tide?`<p class="hint" style="margin-top:8px">${TIDEPREF[pf.tide]} — 지금 ${cur.tideFit!=null?Math.round(cur.tideFit*100)+"% 부합":"–"}</p>`:""}</div>
@@ -809,13 +857,11 @@ function renderResult(){
       ${sun?`<p class="hint" style="margin-top:6px">일출 ${sun.rise} · 일몰 ${sun.set}${sun.uv!=null?` · 자외선 ${n0(sun.uv)}`:""}</p>`:""}
       ${cur.sw2H!=null?`<p class="hint" style="margin-top:6px">2차 스웰 ${n1(cur.sw2H)}m/${n0(cur.sw2P)}s ${compass(cur.sw2D)}</p>`:""}</div>
   </div>
-  <div class="days">${dates.map((d,i)=>{const dt=new Date(d+"T00:00");
+  <div class="days" style="margin-top:12px">${dates.map((d,i)=>{const dt=new Date(d+"T00:00");
     const lbl=i===0?"오늘":i===1?"내일":`${dt.getMonth()+1}/${dt.getDate()}`;
     return `<button data-day="${i}" aria-pressed="${i===dayIdx}">${lbl} (${"일월화수목금토"[dt.getDay()]})</button>`;}).join("")}</div>
   <div class="graph">${graph(all,best,tides,sun)}</div>
   ${best?`<p class="best">가장 좋은 시간대 <b>${String(best.hour).padStart(2,"0")}시</b> — 파고 ${n2(best.wave)}m·${n0(best.period)}s, ${best.win.label}, ${best.cl.label}, ${best.rel.label} ${n1(best.wind)}m/s (${n1(best.s)}점).</p>`:""}
-  <div class="box checkin" id="checkinBox" style="margin-top:12px"></div>
-  <div class="box board" id="boardBox" style="margin-top:12px"></div>
   <div class="cols" style="margin-top:12px">
     <div class="box" id="pfBox"></div>
     <div class="box" id="logBox"></div>
