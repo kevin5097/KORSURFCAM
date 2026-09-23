@@ -156,6 +156,7 @@ ul.ci-list li{padding:7px 0;border-top:1px solid var(--grid);font-size:12.5px;di
 ul.ci-list li i{font-style:normal;color:var(--ink-dim);font-size:12px;flex-basis:100%}
 ul.ci-list li small{color:var(--ink-dim);font-size:11px;margin-left:auto}
 .ci-v{color:var(--swell);font-size:11px}
+.ci-op{color:#04141d;background:var(--dawn);font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:4px}
 .ci-nv{color:var(--ink-dim);font-size:11px}
 .tag.good{background:rgba(63,201,220,.16);color:var(--swell)}
 .tag.mid{background:rgba(240,178,63,.16);color:var(--dawn)}
@@ -197,7 +198,10 @@ ul.loglist li i{display:block;color:var(--ink-dim);font-style:normal;font-size:1
 .loading{color:var(--ink-dim);padding:34px 0;text-align:center}
 
 /* 설정(Supabase) 시트 */
-.helpbtn{margin-left:auto;width:34px;height:34px;flex:none;background:transparent;border:1px solid var(--grid);
+.igbtn{margin-left:auto;width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;
+  color:var(--ink-dim);border:1px solid var(--grid);border-radius:9px;text-decoration:none;transition:color .15s,border-color .15s}
+.igbtn:hover{color:var(--swell);border-color:var(--line)}
+.helpbtn{width:34px;height:34px;flex:none;background:transparent;border:1px solid var(--grid);
   color:var(--ink-dim);border-radius:50%;font:inherit;font-size:15px;font-weight:700;cursor:pointer;line-height:1}
 .helpbtn:hover{color:var(--ink);border-color:var(--line)}
 .cfgbtn{min-height:34px;background:transparent;border:1px solid var(--grid);color:var(--ink-dim);
@@ -227,6 +231,29 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
   border:1px solid var(--grid);background:transparent;color:var(--ink)}
 .sheet button.primary{background:var(--swell);border-color:var(--swell);color:#04141d;font-weight:700}
 .status{font-size:12px;margin-top:10px;color:var(--ink-dim)}
+#opBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:50;
+  background:var(--dawn);color:#04141d;border:0;border-radius:999px;padding:13px 20px;
+  font:inherit;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.sheet.op{max-height:82vh;overflow:auto}
+dialog#opDlg{max-width:560px;width:94vw}
+.op-tag{background:var(--dawn);color:#04141d;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;margin-left:6px;vertical-align:3px}
+.op-region{width:100%;min-height:var(--tap);background:var(--panel);border:1px solid var(--grid);color:var(--ink);
+  border-radius:8px;padding:8px 11px;font:inherit;font-size:15px;margin-bottom:12px}
+.oprow{border:1px solid var(--grid);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel)}
+.oprow-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.oprow-h b{font-size:16px}
+.opmsg{font-size:12px;color:var(--ink-dim)}
+.opmsg.ok{color:var(--swell);font-weight:700}
+.opmsg.warn{color:var(--warn)}
+.oppick{display:flex;gap:6px;margin-bottom:8px}
+.oppick button{flex:1;min-height:40px;background:transparent;border:1px solid var(--grid);color:var(--ink-dim);
+  border-radius:8px;font:inherit;font-size:14px;cursor:pointer}
+.oppick button[aria-pressed="true"]{background:var(--swell);border-color:var(--swell);color:#04141d;font-weight:700}
+.oprow-sel{display:flex;gap:6px;flex-wrap:wrap}
+.oprow-sel select{flex:1;min-width:84px;min-height:40px;background:var(--hull);border:1px solid var(--grid);color:var(--ink);
+  border-radius:8px;padding:6px 8px;font:inherit;font-size:14px}
+.oprow-sel .opsave{flex:1;min-width:84px;min-height:40px;border:0;border-radius:8px;background:var(--swell);color:#04141d;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.op-close{width:100%;min-height:var(--tap);margin-top:8px;background:transparent;border:1px solid var(--grid);color:var(--ink);border-radius:8px;font:inherit;font-size:14px;cursor:pointer}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -235,6 +262,13 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
 <header>
   <h1>WAVEDECK</h1>
   <p>해변을 고르면 파도·바람·물때를 시간대별로</p>
+  <a class="igbtn" id="igBtn" href="https://instagram.com/wavedeck_" target="_blank" rel="noopener" aria-label="인스타그램 @wavedeck_">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5.5"/>
+      <circle cx="12" cy="12" r="4.2"/>
+      <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/>
+    </svg>
+  </a>
   <button class="helpbtn" id="helpBtn" aria-label="이 앱 설명">?</button>
   <button class="cfgbtn" id="cfgBtn" hidden>동기화 설정</button>
 </header>
@@ -275,7 +309,7 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
       <span class="ico" style="color:var(--swell)">◉</span>
       <div><b>실시간 체크인</b>
         <p>모델이 못 잡는 이웃 해변의 차이는 <b>현장 사람들의 체크인</b>으로 메웁니다. 지금 어디에 몇 명이,
-           탈 만한지·붐비는지 투표가 쌓이고 2시간만 유효합니다. 해변 반경 안이면 '현장 인증'으로 올라가
+           탈 만한지·붐비는지 투표가 쌓이고 4시간 유효합니다. 해변 반경 안이면 '현장 인증'으로 올라가
            더 믿을 만한 신호가 됩니다. 지역 화면에서 해변끼리 비교해 좋은 쪽으로 옮겨 타세요.</p></div>
     </div>
     <div class="btns">
@@ -291,15 +325,26 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
     <p>기록과 프로필을 여러 기기에서 공유합니다. 비워 두면 이 기기에만 저장됩니다.
        키는 공개용(sb_publishable_… 또는 anon) 키만 넣으세요.</p>
     <label>Project URL
-      <input id="cfgUrl" type="url" placeholder="https://lgrgsvoxdzzbbrxbnalx.supabase.co" autocomplete="off"></label>
+      <input id="cfgUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
     <label>Publishable / anon key
-      <input id="cfgKey" type="text" placeholder="sb_publishable_2-T72SgnioMi0y3UJ2gaEQ_urpoAq-Q" autocomplete="off"></label>
+      <input id="cfgKey" type="text" placeholder="sb_publishable_… 또는 eyJ…" autocomplete="off"></label>
     <div class="btns">
       <button id="cfgTest">연결 확인</button>
       <button id="cfgSave" class="primary">저장</button>
     </div>
     <button id="cfgClose" style="width:100%;margin-top:8px">닫기</button>
     <p class="status" id="cfgStatus"></p>
+  </div>
+</dialog>
+
+<button id="opBtn" hidden>운영자 입력</button>
+<dialog id="opDlg">
+  <div class="sheet op">
+    <h2>운영자 입력 <span class="op-tag">운영자</span></h2>
+    <p>웹캠·현장을 보고 여러 해변의 지금 상황을 직접 올립니다. 올린 항목은 ‘운영자’로 표시되고 4시간 유효합니다.</p>
+    <select id="opRegionSel" class="op-region"></select>
+    <div id="opRows"></div>
+    <button id="opClose" class="op-close">닫기</button>
   </div>
 </dialog>
 
@@ -447,10 +492,21 @@ function tideEvents(rows){
    publishable(sb_publishable_…) 또는 anon 키는 클라이언트 공개용이라 넣어도 안전합니다.
    이 값을 채워야 스티커로 들어온 사람들의 체크인이 서로 보입니다. */
 const SUPABASE = {
-  url: "https://lgrgsvoxdzzbbrxbnalx.supabase.co",   // ← Supabase 프로젝트 URL
-  key: "sb_publishable_2-T72SgnioMi0y3UJ2gaEQ_urpoAq-Q"          // ← publishable 또는 anon 키
+  url: "https://YOUR-PROJECT.supabase.co",   // ← Supabase 프로젝트 URL
+  key: "sb_publishable_XXXXXXXXXXXX"          // ← publishable 또는 anon 키
 };
 /* ▲▲▲ */
+
+/* 운영자(관리자) 비밀번호 — SHA-256 해시로만 저장한다.
+   기본값은 "wavedeck2026". 바꾸려면 아래 사이트나 터미널로 해시를 만들어 교체하세요.
+     터미널:  echo -n '내비밀번호' | shasum -a 256
+   ※ 클라이언트 코드라 이 해시로 "훔쳐보기"는 막지만, 결정적 우회는 서버(RLS/Edge Function)로만 막힙니다. */
+const ADMIN_HASH = "747361973d10e3c66b5d2e34c9ac7bc64707a6d2c00722d4044fa6021ba00f3b";
+async function sha256hex(s){
+  const buf=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
 const LS = {
   get(k, d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
@@ -557,8 +613,8 @@ async function addCheckin(entry){
   if(!hasCloud()) return { ok:true, cloud:false };
   const payload = { spot:entry.spot, size_label:entry.size, cond_label:entry.cond,
     crowd:entry.crowd, rideable:entry.rideable, note:entry.note||null,
-    verified:entry.verified, dist_m:entry.dist_m,
-    model_wave:entry.model.wave, model_period:entry.model.period, model_score:entry.model.score,
+    verified:entry.verified, dist_m:entry.dist_m, source:entry.source||'user',
+    model_wave:entry.model?.wave??null, model_period:entry.model?.period??null, model_score:entry.model?.score??null,
     client_id:clientId() };
   try{
     await sb("surf_checkins", { method:"POST", headers:{ Prefer:"return=minimal" }, body:JSON.stringify(payload) });
@@ -924,7 +980,7 @@ function checkinCardBody(sum){
       <ul class="ci-list">${sum.live.slice(0,5).map(c=>`<li>
         <span class="tag ${c.rideable||'mid'}">${RIDE[c.rideable]||"–"}</span>
         ${c.size_label}${c.cond_label?` · ${c.cond_label}`:""}${c.crowd?` · ${c.crowd}`:""}
-        ${c.verified?'<span class="ci-v">📍현장</span>':'<span class="ci-nv">위치 미인증</span>'}
+        ${c.source==='operator'?'<span class="ci-op">운영자</span>':(c.verified?'<span class="ci-v">📍현장</span>':'<span class="ci-nv">위치 미인증</span>')}
         ${c.note?`<i>${c.note}</i>`:""}<small>${c.agoLabel||agoText(c.created_at)}</small></li>`).join("")}</ul>
     </div>`;
 }
@@ -946,7 +1002,7 @@ function renderCheckin(sp,cur){
     body=checkinCardBody(sum);
   } else {
     // 예시 프리뷰: 실제와 같은 레이아웃을 흐리게, "예시" 배지와 함께
-    body=`<p class="ci-empty">아직 이 해변에 올라온 체크인이 없어요. 현장이라면 <b>첫 번째로 남겨보세요.</b> (2시간 유효)</p>
+    body=`<p class="ci-empty">아직 이 해변에 올라온 체크인이 없어요. 현장이라면 <b>첫 번째로 남겨보세요.</b> (4시간 유효)</p>
       <div class="ci-sample"><span class="sample-badge">예시</span>${checkinCardBody(SAMPLE_CHECKIN)}</div>
       <p class="ci-sample-cap">체크인이 쌓이면 위처럼 보입니다.</p>`;
   }
@@ -993,7 +1049,7 @@ function openCheckinForm(sp,cur){
     btn.textContent="올리는 중…";
     const now=new Date();
     const entry={id:"ci"+Date.now().toString(36),spot:sp.name,
-      created_at:now.toISOString(), expires_at:new Date(now.getTime()+2*3600*1000).toISOString(),
+      created_at:now.toISOString(), expires_at:new Date(now.getTime()+4*3600*1000).toISOString(),
       size:picked.size,size_label:picked.size,cond:picked.cond,cond_label:picked.cond,crowd:picked.crowd,
       rideable:picked.rideable,note:document.getElementById("ciNote").value.trim(),
       verified,dist_m:dist,
@@ -1124,25 +1180,93 @@ document.getElementById("introStart").onclick=()=>{
 };
 introDlg.addEventListener("cancel",()=>{ if(document.getElementById("introDont").checked) LS.set("surf.introSeen", true); });
 
-/* 관리자 진입: 헤더 로고를 길게(0.8초) 누르면 이 기기에서 지형 조건 편집이 켜진다.
-   일반 사용자에겐 보이지 않고, 켜두면 pfBox와 동기화 설정이 나타난다. */
+/* 관리자 진입: 헤더 로고를 길게(0.8초) 누르면 비밀번호를 물어 운영자 모드로 들어간다. */
 function applyAdmin(){
   const on = LS.get("surf.admin", false);
   const pf = document.getElementById("pfBox"); if(pf) pf.hidden = !on;
   const cfg = document.getElementById("cfgBtn"); if(cfg) cfg.hidden = !on;
+  const opb = document.getElementById("opBtn"); if(opb) opb.hidden = !on;
 }
 (function(){
   const logo=document.querySelector("header h1"); if(!logo) return;
   let t=null;
-  const start=()=>{ t=setTimeout(()=>{
-    const on=!LS.get("surf.admin",false); LS.set("surf.admin",on); applyAdmin();
-    alert(on?"관리자 모드 ON — 지형 조건·동기화 설정이 표시됩니다.":"관리자 모드 OFF");
+  const start=()=>{ t=setTimeout(async ()=>{
+    if(LS.get("surf.admin",false)){          // 이미 켜져 있으면 끄기
+      LS.set("surf.admin",false); applyAdmin(); alert("운영자 모드 OFF"); return;
+    }
+    const pw=prompt("운영자 비밀번호"); if(pw==null) return;
+    const ok=(await sha256hex(pw))===ADMIN_HASH;
+    if(ok){ LS.set("surf.admin",true); applyAdmin(); alert("운영자 모드 ON — 하단 ‘운영자 입력’ 버튼과 설정이 표시됩니다."); }
+    else alert("비밀번호가 맞지 않습니다.");
   },800); };
   const cancel=()=>{ if(t){clearTimeout(t);t=null;} };
   logo.addEventListener("mousedown",start); logo.addEventListener("touchstart",start,{passive:true});
   ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>logo.addEventListener(ev,cancel));
   logo.style.cursor="default"; logo.style.userSelect="none";
 })();
+
+/* ===== 운영자 입력 패널: 여러 해변을 한 화면에서 웹캠 보고 입력 ===== */
+const opDlg=document.getElementById("opDlg");
+document.getElementById("opBtn").onclick=()=>openOperator();
+document.getElementById("opClose").onclick=()=>opDlg.close();
+function opRegions(){
+  const set=[]; SPOTS.forEach(s=>{ const k=s.coast+" · "+s.region; if(!set.includes(k)) set.push(k); });
+  return set;
+}
+function openOperator(){
+  const regions=opRegions();
+  const sel=LS.get("surf.opRegion", regions[0]);
+  document.getElementById("opRegionSel").innerHTML=
+    regions.map(r=>`<option ${r===sel?"selected":""}>${r}</option>`).join("");
+  document.getElementById("opRegionSel").onchange=e=>{ LS.set("surf.opRegion",e.target.value); opRenderRows(); };
+  opRenderRows();
+  opDlg.showModal();
+}
+function opRenderRows(){
+  const key=LS.get("surf.opRegion", opRegions()[0]);
+  const [coast,region]=key.split(" · ");
+  const spots=SPOTS.filter(s=>s.coast===coast&&s.region===region);
+  const rideBtns=name=>`<div class="oppick" data-k="rideable">`+
+    Object.entries(RIDE).map(([k,v])=>`<button type="button" data-v="${k}">${v}</button>`).join("")+`</div>`;
+  const opts=(arr)=>arr.map(o=>`<option>${o}</option>`).join("");
+  document.getElementById("opRows").innerHTML=spots.map(s=>`
+    <div class="oprow" data-spot="${s.name}">
+      <div class="oprow-h"><b>${s.name}</b><span class="opmsg"></span></div>
+      <div class="oppick" data-k="rideable">${Object.entries(RIDE).map(([k,v])=>`<button type="button" data-v="${k}">${v}</button>`).join("")}</div>
+      <div class="oprow-sel">
+        <select data-k="size"><option value="">크기</option>${opts(CHECK_SIZES)}</select>
+        <select data-k="cond"><option value="">상태</option>${opts(CONDS)}</select>
+        <select data-k="crowd"><option value="">사람</option>${opts(["한산","보통","붐빔"])}</select>
+        <button type="button" class="opsave primary">올리기</button>
+      </div>
+    </div>`).join("");
+  document.querySelectorAll("#opRows .oppick").forEach(g=>g.onclick=e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  });
+  document.querySelectorAll("#opRows .opsave").forEach(btn=>btn.onclick=async e=>{
+    const row=e.target.closest(".oprow"); const spot=row.dataset.spot;
+    const rideBtn=row.querySelector('.oppick button[aria-pressed="true"]');
+    const size=row.querySelector('select[data-k="size"]').value;
+    const cond=row.querySelector('select[data-k="cond"]').value;
+    const crowd=row.querySelector('select[data-k="crowd"]').value;
+    const msg=row.querySelector(".opmsg");
+    if(!rideBtn){ msg.textContent="탈만한가 선택"; msg.className="opmsg warn"; return; }
+    if(!size){ msg.textContent="크기 선택"; msg.className="opmsg warn"; return; }
+    btn.textContent="올리는 중…";
+    const now=new Date();
+    const entry={ id:"op"+Date.now().toString(36), spot, source:"operator",
+      created_at:now.toISOString(), expires_at:new Date(now.getTime()+4*3600*1000).toISOString(),
+      size, size_label:size, cond, cond_label:cond||null, crowd:crowd||null,
+      rideable:rideBtn.dataset.v, note:"운영자 웹캠 확인", verified:false, dist_m:null, model:{} };
+    const res=await addCheckin(entry);
+    if(res.ok){ msg.textContent="✓ 올림"; msg.className="opmsg ok";
+      // 현재 보고 있는 해변이면 즉시 갱신
+      if(activeSpot && activeSpot.name===spot){ pickSpot(activeSpot); }
+    } else if(res.rate){ msg.textContent="rate limit"; msg.className="opmsg warn"; }
+    btn.textContent="올리기";
+  });
+}
 
 renderPicker();
 applyAdmin();
