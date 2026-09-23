@@ -291,9 +291,9 @@ dialog::backdrop{background:rgba(2,10,15,.72)}
     <p>기록과 프로필을 여러 기기에서 공유합니다. 비워 두면 이 기기에만 저장됩니다.
        키는 공개용(sb_publishable_… 또는 anon) 키만 넣으세요.</p>
     <label>Project URL
-      <input id="cfgUrl" type="url" placeholder="https://lgrgsvoxdzzbbrxbnalx.supabase.co" autocomplete="off"></label>
+      <input id="cfgUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
     <label>Publishable / anon key
-      <input id="cfgKey" type="text" placeholder="sb_publishable_2-T72SgnioMi0y3UJ2gaEQ_urpoAq-Q" autocomplete="off"></label>
+      <input id="cfgKey" type="text" placeholder="sb_publishable_… 또는 eyJ…" autocomplete="off"></label>
     <div class="btns">
       <button id="cfgTest">연결 확인</button>
       <button id="cfgSave" class="primary">저장</button>
@@ -443,11 +443,25 @@ function tideEvents(rows){
 
 
 /* ================= 저장 계층 (로컬 + Supabase) ================= */
+/* ▼▼▼ 여기에 Supabase 연결 정보를 넣으면 모든 방문자가 자동으로 같은 DB에 연결됩니다.
+   publishable(sb_publishable_…) 또는 anon 키는 클라이언트 공개용이라 넣어도 안전합니다.
+   이 값을 채워야 스티커로 들어온 사람들의 체크인이 서로 보입니다. */
+const SUPABASE = {
+  url: "https://YOUR-PROJECT.supabase.co",   // ← Supabase 프로젝트 URL
+  key: "sb_publishable_XXXXXXXXXXXX"          // ← publishable 또는 anon 키
+};
+/* ▲▲▲ */
 const LS = {
   get(k, d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
 };
-const cfg = () => LS.get("surf.cfg", { url:"", key:"" });
+function baked(){ // 코드에 박힌 기본 설정이 유효한지
+  return SUPABASE.url && SUPABASE.key
+    && !SUPABASE.url.includes("YOUR-PROJECT") && !SUPABASE.key.includes("XXXX");
+}
+// localStorage 설정이 있으면 그것을, 없으면 코드에 박은 기본값을 쓴다
+const cfg = () => { const c=LS.get("surf.cfg", null);
+  return (c && c.url && c.key) ? c : (baked() ? {url:SUPABASE.url, key:SUPABASE.key} : {url:"",key:""}); };
 const hasCloud = () => { const c=cfg(); return !!(c.url && c.key); };
 function clientId(){
   let id = LS.get("surf.cid", null);
