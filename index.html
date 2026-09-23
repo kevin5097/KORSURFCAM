@@ -325,9 +325,9 @@ dialog#opDlg{max-width:560px;width:94vw}
     <p>기록과 프로필을 여러 기기에서 공유합니다. 비워 두면 이 기기에만 저장됩니다.
        키는 공개용(sb_publishable_… 또는 anon) 키만 넣으세요.</p>
     <label>Project URL
-      <input id="cfgUrl" type="url" placeholder="https://lgrgsvoxdzzbbrxbnalx.supabase.co" autocomplete="off"></label>
+      <input id="cfgUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
     <label>Publishable / anon key
-      <input id="cfgKey" type="text" placeholder="sb_publishable_2-T72SgnioMi0y3UJ2gaEQ_urpoAq-Q" autocomplete="off"></label>
+      <input id="cfgKey" type="text" placeholder="sb_publishable_… 또는 eyJ…" autocomplete="off"></label>
     <div class="btns">
       <button id="cfgTest">연결 확인</button>
       <button id="cfgSave" class="primary">저장</button>
@@ -493,7 +493,7 @@ function tideEvents(rows){
    이 값을 채워야 스티커로 들어온 사람들의 체크인이 서로 보입니다. */
 const SUPABASE = {
   url: "https://lgrgsvoxdzzbbrxbnalx.supabase.co",   // ← Supabase 프로젝트 URL
-  key: "sb_publishable_2-T72SgnioMi0y3UJ2gaEQ_urpoAq-Q"          // ← publishable 또는 anon 키
+  key: "sb_publishable_2-T72SgnioMi0y3UJ2gaEQ_urpoAq-Q"  // ← publishable 또는 anon 키
 };
 /* ▲▲▲ */
 
@@ -1187,23 +1187,35 @@ function applyAdmin(){
   const cfg = document.getElementById("cfgBtn"); if(cfg) cfg.hidden = !on;
   const opb = document.getElementById("opBtn"); if(opb) opb.hidden = !on;
 }
+// 운영자 모드 진입/해제 — 롱프레스와 #op 해시 양쪽에서 호출
+async function toggleAdmin(){
+  if(LS.get("surf.admin",false)){
+    LS.set("surf.admin",false); applyAdmin(); alert("운영자 모드 OFF"); return;
+  }
+  const pw=prompt("운영자 비밀번호"); if(pw==null) return;
+  const ok=(await sha256hex(pw))===ADMIN_HASH;
+  if(ok){ LS.set("surf.admin",true); applyAdmin(); alert("운영자 모드 ON — 하단 ‘운영자 입력’ 버튼이 표시됩니다."); }
+  else alert("비밀번호가 맞지 않습니다.");
+}
 (function(){
   const logo=document.querySelector("header h1"); if(!logo) return;
   let t=null;
-  const start=()=>{ t=setTimeout(async ()=>{
-    if(LS.get("surf.admin",false)){          // 이미 켜져 있으면 끄기
-      LS.set("surf.admin",false); applyAdmin(); alert("운영자 모드 OFF"); return;
-    }
-    const pw=prompt("운영자 비밀번호"); if(pw==null) return;
-    const ok=(await sha256hex(pw))===ADMIN_HASH;
-    if(ok){ LS.set("surf.admin",true); applyAdmin(); alert("운영자 모드 ON — 하단 ‘운영자 입력’ 버튼과 설정이 표시됩니다."); }
-    else alert("비밀번호가 맞지 않습니다.");
-  },800); };
+  const start=e=>{ if(e&&e.cancelable&&e.type==="touchstart") e.preventDefault(); t=setTimeout(toggleAdmin,700); };
   const cancel=()=>{ if(t){clearTimeout(t);t=null;} };
-  logo.addEventListener("mousedown",start); logo.addEventListener("touchstart",start,{passive:true});
+  logo.addEventListener("mousedown",start);
+  logo.addEventListener("touchstart",start,{passive:false});   // preventDefault 위해 non-passive
   ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>logo.addEventListener(ev,cancel));
-  logo.style.cursor="default"; logo.style.userSelect="none";
+  logo.addEventListener("contextmenu",e=>e.preventDefault());   // 아이폰 롱프레스 메뉴 차단
+  logo.style.cssText+=";cursor:default;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none";
 })();
+// 주소 끝에 #op 를 붙이면 (또는 ?op=1) 어떤 기기·빈 화면에서도 운영자 진입
+function checkOpHash(){
+  if(location.hash==="#op" || /[?&]op=1\b/.test(location.search)){
+    if(!LS.get("surf.admin",false)) toggleAdmin();
+    // 주소는 깔끔하게 되돌린다
+    history.replaceState(null,"",location.pathname);
+  }
+}
 
 /* ===== 운영자 입력 패널: 여러 해변을 한 화면에서 웹캠 보고 입력 ===== */
 const opDlg=document.getElementById("opDlg");
@@ -1270,6 +1282,7 @@ function opRenderRows(){
 
 renderPicker();
 applyAdmin();
+checkOpHash();
 if(!LS.get("surf.introSeen", false)) openIntro();
 </script>
 </body>
