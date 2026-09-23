@@ -526,8 +526,11 @@ function clientId(){
 }
 function sbHeaders(extra){
   const c = cfg();
-  return Object.assign({ apikey:c.key, Authorization:"Bearer "+c.key,
-    "Content-Type":"application/json" }, extra||{});
+  const h = { apikey:c.key, "Content-Type":"application/json" };
+  // 새 publishable/secret 키(sb_...)는 JWT가 아니므로 Authorization Bearer 로 보내면 401.
+  // 예전 anon 키(eyJ... JWT)만 Bearer 로 보낸다.
+  if(/^eyJ/.test(c.key)) h.Authorization = "Bearer "+c.key;
+  return Object.assign(h, extra||{});
 }
 async function sb(path, opts){
   const c = cfg();
@@ -1158,8 +1161,9 @@ document.getElementById("cfgTest").onclick=async()=>{
   const url=document.getElementById("cfgUrl").value.trim(), key=document.getElementById("cfgKey").value.trim();
   const st=document.getElementById("cfgStatus"); st.textContent="확인 중…";
   try{
+    const th={apikey:key}; if(/^eyJ/.test(key)) th.Authorization="Bearer "+key;
     const r=await fetch(url.replace(/\/$/,"")+"/rest/v1/spot_profiles?limit=1",
-      {headers:{apikey:key,Authorization:"Bearer "+key}});
+      {headers:th});
     st.textContent = r.ok ? "연결 성공. 저장을 누르세요." : `실패: ${r.status} — 테이블·키를 확인하세요.`;
   }catch(e){ st.textContent="연결 실패: "+e.message; }
 };
@@ -1184,7 +1188,8 @@ introDlg.addEventListener("cancel",()=>{ if(document.getElementById("introDont")
 function applyAdmin(){
   const on = LS.get("surf.admin", false);
   const pf = document.getElementById("pfBox"); if(pf) pf.hidden = !on;
-  const cfg = document.getElementById("cfgBtn"); if(cfg) cfg.hidden = !on;
+  // 동기화 설정은 Supabase 연결 정보를 소스에 박은 뒤로 불필요 — 항상 숨김
+  const cfg = document.getElementById("cfgBtn"); if(cfg) cfg.hidden = true;
   const opb = document.getElementById("opBtn"); if(opb) opb.hidden = !on;
 }
 // 운영자 모드 진입/해제 — 롱프레스와 #op 해시 양쪽에서 호출
