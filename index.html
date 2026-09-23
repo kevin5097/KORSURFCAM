@@ -534,8 +534,10 @@ function sbHeaders(extra){
 }
 async function sb(path, opts){
   const c = cfg();
-  const res = await fetch(c.url.replace(/\/$/,"") + "/rest/v1/" + path,
-    Object.assign({ headers: sbHeaders(opts && opts.headers) }, opts));
+  opts = opts || {};
+  // opts.headers(예: Prefer)를 apikey 헤더에 합쳐 넣는다. 순서를 잘못 두면 apikey가 덮여 401 발생.
+  const fetchOpts = Object.assign({}, opts, { headers: sbHeaders(opts.headers) });
+  const res = await fetch(c.url.replace(/\/$/,"") + "/rest/v1/" + path, fetchOpts);
   if(!res.ok){ const t = await res.text(); throw new Error(`${res.status} ${t}`); }
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
